@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>聖嬰現象(ENSO) 3D海氣互動模擬器 (雙環流修正版)</title>
+    <title>聖嬰現象(ENSO) 3D海氣互動模擬器</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000b18; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; color: #333; }
         
@@ -43,7 +43,7 @@
         .gradient-bar { height: 12px; width: 100%; background: linear-gradient(to right, #0044ff, #00ccff, #ffff00, #ff6600, #ff0000); border-radius: 6px; margin-top: 5px; }
         .legend-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #555; margin-top: 2px; }
 
-        .geo-label { position: absolute; color: white; font-weight: bold; font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none; transform: translate(-50%, -50%); opacity: 0.8; }
+        .geo-label { position: absolute; color: white; font-weight: bold; font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none; transform: translate(-50%, -50%); opacity: 0.8; z-index: 5; }
 
         .dg.main { margin-top: 15px !important; }
         @media (max-width: 900px) { #chart-container, #data-log-panel { display: none !important; } }
@@ -57,6 +57,8 @@
 
     <div id="label-west" class="geo-label">西太平洋<br>(印尼 / 澳洲)</div>
     <div id="label-east" class="geo-label">東太平洋<br>(南美洲)</div>
+    <!-- 新增湧升流文字標籤 -->
+    <div id="label-upwell" class="geo-label" style="color: #48cae4; text-shadow: 0 0 10px #48cae4, 0 2px 4px #000; font-size: 1.3rem;">🌊 湧升流</div>
 
     <div id="ui-panel" class="panel">
         <div class="drag-handle" id="ui-drag-handle"><h1 class="drag-title-text">ENSO 海氣互動模擬器</h1></div>
@@ -158,17 +160,29 @@
         createLandmass(-110, 20, 0x3d5a80); 
         createLandmass(110, 20, 0x8f7a66);
 
-        // 標籤座標追蹤
-        const labelWest = document.getElementById('label-west');
-        const labelEast = document.getElementById('label-east');
+        // 標籤座標追蹤共用函式
+        const tempV = new THREE.Vector3();
+        function updateElem(elem, objX, objY, objZ) {
+            if (!elem) return;
+            tempV.set(objX, objY, objZ).project(camera);
+            const x = (tempV.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-(tempV.y * 0.5) + 0.5) * window.innerHeight;
+            if (tempV.z > 1) { elem.style.opacity = '0'; } 
+            else { elem.style.opacity = '1'; elem.style.left = `${x}px`; elem.style.top = `${y}px`; }
+        }
+
         function updateLabels() {
-            const vectorW = new THREE.Vector3(-110, 25, 0).project(camera);
-            labelWest.style.left = (vectorW.x * .5 + .5) * window.innerWidth + 'px';
-            labelWest.style.top = (-(vectorW.y * .5) + .5) * window.innerHeight + 'px';
+            updateElem(document.getElementById('label-west'), -110, 25, 0);
+            updateElem(document.getElementById('label-east'), 110, 25, 0);
             
-            const vectorE = new THREE.Vector3(110, 25, 0).project(camera);
-            labelEast.style.left = (vectorE.x * .5 + .5) * window.innerWidth + 'px';
-            labelEast.style.top = (-(vectorE.y * .5) + .5) * window.innerHeight + 'px';
+            // 湧升流標籤控制 (聖嬰年關閉)
+            const labelUpwell = document.getElementById('label-upwell');
+            if(params.currentONI < 0.5) {
+                labelUpwell.style.display = 'block';
+                updateElem(labelUpwell, 80, -10, 20); // 放在湧升流上方
+            } else {
+                labelUpwell.style.display = 'none';
+            }
         }
 
         // --- 海洋系統 ---
@@ -201,7 +215,27 @@
         deepOcean.position.y = -20;
         scene.add(deepOcean);
 
+        // ★ 新增：3D 湧升流立體箭頭群組
+        const upwellArrows = new THREE.Group();
+        const arrowMat = new THREE.MeshPhongMaterial({ color: 0x48cae4, transparent: true, opacity: 0.8, emissive: 0x0077b6 });
+        for(let i=0; i<5; i++) {
+            const arrow = new THREE.Group();
+            const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 12, 8), arrowMat);
+            cylinder.position.y = 6;
+            const cone = new THREE.Mesh(new THREE.ConeGeometry(3, 5, 8), arrowMat);
+            cone.position.y = 12 + 2.5;
+            arrow.add(cylinder); arrow.add(cone);
+            
+            // 隨機分佈在東側水底
+            arrow.position.set(70 + Math.random()*15, -35 - Math.random()*15, (Math.random()-0.5)*20);
+            arrow.userData = { origY: arrow.position.y, speedOffset: 0.5 + Math.random()*0.5 };
+            upwellArrows.add(arrow);
+        }
+        scene.add(upwellArrows);
+
+
         function updateOceanVisuals(oni) {
+            // 海溫漸層
             sstCtx.clearRect(0, 0, 512, 2);
             const grd = sstCtx.createLinearGradient(0, 0, 512, 0);
             let warmPoolEdge = Math.max(0.1, Math.min(0.9, 0.5 + (oni / 6)));
@@ -214,6 +248,7 @@
             sstCtx.fillRect(0, 0, 512, 2);
             sstTexture.needsUpdate = true;
 
+            // 斜溫層變形
             const positions = thermocline.geometry.attributes.position.array;
             for (let i = 0; i < positions.length; i += 3) {
                 let normalizedX = (positions[i] + 100) / 200; 
@@ -221,6 +256,24 @@
                 positions[i+2] = -Math.abs(depth); 
             }
             thermocline.geometry.attributes.position.needsUpdate = true;
+
+            // ★ 更新湧升流立體箭頭
+            let upwellStrength = Math.max(0, 1.0 - (oni / 1.5)); // Normal=1, LaNina=~2.6, ElNino=0
+            if (upwellStrength > 0.1) {
+                upwellArrows.visible = true;
+                upwellArrows.children.forEach(arrow => {
+                    // La Nina 速度快，Normal 速度一般
+                    arrow.position.y += (oni < 0 ? 0.4 : 0.2) * arrow.userData.speedOffset;
+                    if (arrow.position.y > -8) {
+                        arrow.position.y = arrow.userData.origY; // 升到海面附近後重置到底部
+                    }
+                    // 根據強度調整箭頭大小
+                    let scale = Math.min(2.0, upwellStrength);
+                    arrow.scale.set(scale, scale, scale);
+                });
+            } else {
+                upwellArrows.visible = false; // 聖嬰年完全隱藏湧升流
+            }
         }
 
         // --- 粒子與雲系系統 ---
@@ -230,7 +283,7 @@
         // 沃克環流 (大氣粒子)
         const airGeo = new THREE.BufferGeometry();
         const airPos = new Float32Array(AIR_COUNT * 3);
-        const airExtra = new Float32Array(AIR_COUNT * 3); // [角度, 半徑偏移, Z軸偏移]
+        const airExtra = new Float32Array(AIR_COUNT * 3); 
         for(let i=0; i<AIR_COUNT; i++) {
             airExtra[i*3] = Math.random() * Math.PI * 2;
             airExtra[i*3+1] = (Math.random() - 0.5) * 15;
@@ -266,7 +319,7 @@
         const rainParticles = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: 0x00aaff, size: 2.0, transparent: true, opacity: 0.8, blending: THREE.NormalBlending, depthWrite: false }));
         cloudGroup.add(rainParticles);
 
-        // --- ★ 核心修正：將沃克環流分裂為東、西兩個氣室 ---
+        // 雙環流修正
         function updateAtmosphere(oni) {
             let convectionX = Math.max(-95, Math.min(60, -60 + (oni * 25)));
 
@@ -274,18 +327,13 @@
                 let wPos = airParticles.geometry.attributes.position.array;
                 let wExtra = airParticles.geometry.attributes.extra.array;
                 
-                // 動態計算東側與西側的兩個獨立環流圈
-                // 東側環流 (正常沃克環流主體)
                 let loopEastCx = (convectionX + 85) / 2;
                 let loopEastRx = Math.abs(85 - convectionX) / 2 + 5;
                 
-                // 西側環流 (聖嬰現象時出現的異常下沉環流)
                 let loopWestCx = (-95 + convectionX) / 2;
                 let loopWestRx = Math.abs(convectionX - (-95)) / 2 + 5;
 
                 let loopRy = 22;
-                
-                // ENSO 狀態改變兩側風速 (動態視覺強弱)
                 let eastSpeed = Math.max(0.005, 0.02 - (oni * 0.005));
                 let westSpeed = Math.max(0.005, 0.02 + (oni * 0.005));
 
@@ -293,7 +341,6 @@
                     let isEastCell = (i < AIR_COUNT / 2);
 
                     if (isEastCell) {
-                        // 東側環流：逆時針(表面吹東風向西)
                         wExtra[i*3] -= eastSpeed; 
                         let angle = wExtra[i*3];
                         let rOff = wExtra[i*3+1];
@@ -303,7 +350,6 @@
                         wPos[i*3+1] = 25 + Math.sin(angle) * (loopRy + rOff);
                         wPos[i*3+2] = zOff;
                     } else {
-                        // 西側環流：順時針(表面異常吹西風向東)
                         wExtra[i*3] += westSpeed; 
                         let angle = wExtra[i*3];
                         let rOff = wExtra[i*3+1];
@@ -318,7 +364,6 @@
                 airParticles.visible = true;
             } else { airParticles.visible = false; }
 
-            // 雲層追蹤與降雨動畫
             if(params.showCloudsRain) {
                 cloudGroup.position.x += (convectionX - cloudGroup.position.x) * 0.1;
                 cloudGroup.position.y = 20 + Math.sin(frameCount * 0.05) * 1.5;
@@ -335,8 +380,6 @@
                 rainParticles.geometry.attributes.position.needsUpdate = true;
                 cloudGroup.visible = true;
             } else { cloudGroup.visible = false; }
-            
-            thermocline.visible = params.showThermocline;
         }
 
         // --- Chart.js 時序圖設定 ---
@@ -364,7 +407,7 @@
         
         const f2 = gui.addFolder('2. 視覺化圖層開關');
         f2.add(params, 'showThermocline').name('顯示海底斜溫層');
-        f2.add(params, 'showAir').name('顯示沃克環流 (3D風帶)');
+        f2.add(params, 'showAir').name('顯示沃克雙環流 (3D風帶)');
         f2.add(params, 'showCloudsRain').name('顯示實體雲層與降雨');
 
         const f3 = gui.addFolder('3. 系統與時間控制');
@@ -385,10 +428,9 @@
             const sstAnomaly = oni * 0.8; 
             
             let stageClass = "normal-stage", stageName = "正常年 (Normal)", windDesc = "強勁偏東風 (東南信風)", weatherDesc = "西側多雨、東側湧升流豐富";
-            if (oni > 0.5) { stageClass = "elnino-stage"; stageName = "聖嬰現象 (El Niño)"; windDesc = oni > 1.5 ? "異常偏西風爆發" : "信風極度減弱"; weatherDesc = "對流東移中太平洋，西側下沉乾旱"; } 
+            if (oni > 0.5) { stageClass = "elnino-stage"; stageName = "聖嬰現象 (El Niño)"; windDesc = oni > 1.5 ? "異常偏西風爆發" : "信風極度減弱"; weatherDesc = "對流東移中太平洋，湧升流消失"; } 
             else if (oni < -0.5) { stageClass = "lanina-stage"; stageName = "反聖嬰現象 (La Niña)"; windDesc = "信風異常增強"; weatherDesc = "西側劇烈豪雨，東側極度寒冷乾燥"; }
 
-            // 處理暫停標籤
             const pauseHTML = params.isPaused ? `<span class="paused-badge">暫停中</span>` : "";
             document.getElementById('stage-badge').className = "stage-badge " + stageClass;
             document.getElementById('stage-badge').innerHTML = stageName + pauseHTML;
@@ -398,7 +440,6 @@
             document.getElementById('val-wind').innerText = windDesc;
             document.getElementById('val-weather').innerText = weatherDesc;
 
-            // 實時紀錄 (受暫停與紀錄開關控制)
             if (!params.isPaused && params.autoRecord && frameCount % 60 === 0) {
                 simMonth++;
                 let logTable = document.getElementById('log-table').getElementsByTagName('tbody')[0];
