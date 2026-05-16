@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>颱風模擬器(教學用)</title>
+    <title>颱風模擬器(教學版)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #00152b; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
         
@@ -49,9 +49,7 @@
         .color-box { width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; }
         .pause-badge { display: inline-block; background: #e63946; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-left: 5px; animation: blink 2s infinite; }
         
-        /* 鎖定樣式 */
         .dg.main .disabled { pointer-events: none; opacity: 0.4; filter: grayscale(1); }
-
         @media (max-width: 768px) { #chart-container, #data-log-panel { display: none !important; } #rain-map-container { left: auto; right: 20px; } }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -62,7 +60,7 @@
 <body>
 
     <div id="ui-panel" class="panel">
-        <div class="drag-handle" id="ui-drag-handle"><h1 class="drag-title-text">颱風模擬器(教學用)</h1></div>
+        <div class="drag-handle" id="ui-drag-handle"><h1 class="drag-title-text">颱風模擬器(教學版)</h1></div>
         <div id="stage-badge" class="stage-badge stage-0">熱帶擾動</div>
         <div class="status-box" id="status-container"><div id="status-text">正在初始化大氣環境...</div></div>
         <div class="vector-legend" id="vector-legend">
@@ -103,7 +101,6 @@
     </div>
 
     <script>
-        // 視窗拖曳系統
         function makeDraggable(elmnt, handleId) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; const handle = document.getElementById(handleId);
             if (handle) { handle.onmousedown = dragMouseDown; handle.ontouchstart = dragTouchStart; }
@@ -131,7 +128,6 @@
         const wmPlane = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshBasicMaterial({ map: wmTex, transparent: true, opacity: 0.65, depthWrite: false, side: THREE.DoubleSide })); wmPlane.rotation.x = -Math.PI / 2; wmPlane.position.y = 2; scene.add(wmPlane);
         const grid = new THREE.GridHelper(1000, 40, 0x0077b6, 0x0077b6); grid.material.opacity = 0.2; grid.material.transparent = true; scene.add(grid);
 
-        // 台灣真實地形矩陣
         const taiwanPoly = [ [50,10], [58,16], [60,25], [57,40], [53,60], [48,90], [43,125], [40,145], [36,148], [32,140], [27,120], [22,95], [21,80], [24,55], [31,35], [41,18] ];
         function isInsidePolygon(point, vs) { var x = point[0], y = point[1]; var inside = false; for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) { var xi = vs[i][0], yi = vs[i][1]; var xj = vs[j][0], yj = vs[j][1]; var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi); if (intersect) inside = !inside; } return inside; }
         const twMapInfo = new Array(80*160);
@@ -206,6 +202,9 @@
             } 
         });
 
+        // ==========================================
+        // 修正點: 將路徑 8 修改為包含中繼點 (mid) 的貝茲曲線轉向
+        // ==========================================
         const steeringConfigs = {
             '-- 自訂 / 原地發展 (手動調整緯度) --': { s: [0, 0], e: [0, 0], hX: 512, hZ: 512, lat: null },
             '路徑 1 (通過北部海面 - 高壓略退)': { s: [-200, 100], e: [200, 100], hX: 300, hZ: -20, lat: 25 },
@@ -215,8 +214,10 @@
             '路徑 5 (通過南部海面 - 高壓西伸)': { s: [-200, -100], e: [200, -100], hX: 0, hZ: -200, lat: 19 },
             '路徑 6 (東岸北上 - 高壓東退)': { s: [-35, -200], e: [-35, 200], hX: 450, hZ: -50, lat: 20 },
             '路徑 7 (西岸北上 - 高壓東退且偏南)': { s: [35, -200], e: [35, 200], hX: 500, hZ: 100, lat: 20 },
-            '路徑 8 (南海向西 - 高壓異常西伸)': { s: [-200, 120], e: [200, 120], hX: -100, hZ: -250, lat: 18 },
-            '路徑 9 (東方海面北上 - 高壓大幅東退)': { s: [-100, -200], e: [-100, 200], hX: 600, hZ: 0, lat: 22 }
+            // 路徑 8 修正: 從東南來，抵達西南沿海 (V型底)，向東北遠離 (貝茲控制點 mid 用於製造拋物線)
+            '路徑 8 (南部海面轉西南沿海北上)': { s: [-150, -150], mid: [230, -80], e: [-150, 150], hX: 400, hZ: 250, lat: 21 },
+            // 路徑 9 修正: 確實從西南方南海生成，沿著西海岸 (X=100) 穩定向北移動
+            '路徑 9 (南海生成沿西海岸北上)': { s: [100, -200], e: [100, 200], hX: -100, hZ: -250, lat: 20 }
         };
 
         const params = {
@@ -229,7 +230,7 @@
                 taiwanGroup.visible = true; systemEvolution = 500; lastRecordedProgPct = -1;
                 resetRainMap(); typhoonChart.data.labels = []; typhoonChart.data.datasets.forEach(ds => ds.data = []); typhoonChart.update();
                 document.getElementById('log-table').getElementsByTagName('tbody')[0].innerHTML = ''; 
-                updateGUILock(); // 模擬啟動時鎖定
+                updateGUILock();
                 gui.updateDisplay(); 
             },
             recordData: function(xLabel) {
@@ -249,7 +250,7 @@
                 systemEvolution = 0; taiwanGroup.visible = false; params.isSimulating = false; params.isPaused = false; frameCount = 0; lastRecordedProgPct = -1;
                 typhoonChart.data.labels = []; typhoonChart.data.datasets.forEach(ds => ds.data = []); typhoonChart.update();
                 resetRainMap(); document.getElementById('log-table').getElementsByTagName('tbody')[0].innerHTML = ''; document.getElementById('data-log-panel').style.display = 'none'; 
-                updateGUILock(); // 重置後恢復
+                updateGUILock(); 
                 gui.updateDisplay();
             }
         };
@@ -261,25 +262,17 @@
         const sstCtrl = f1.add(params, 'sst', 20, 32).name('海表溫 (°C)'); 
         const shearCtrl = f1.add(params, 'windShear', 0, 30).name('垂直風切 (m/s)');
 
-        // 互斥邏輯鎖定函式
         function updateGUILock() {
             const isRouteMode = !params.steeringHigh.startsWith('--');
             const isSimulating = params.isSimulating;
-
-            // 1. 如果選擇具體路徑，緯度變灰色鎖定；若沒選路徑(自訂模式)，緯度解鎖
             latCtrl.domElement.closest('.cr').classList.toggle('disabled', isRouteMode || isSimulating);
-            
-            // 2. 模擬開始後，海溫、風切、路徑選擇全部鎖定
-            [routeCtrl, sstCtrl, shearCtrl].forEach(c => {
-                c.domElement.closest('.cr').classList.toggle('disabled', isSimulating);
-            });
+            [routeCtrl, sstCtrl, shearCtrl].forEach(c => { c.domElement.closest('.cr').classList.toggle('disabled', isSimulating); });
         }
 
         routeCtrl.onChange(val => {
             const config = steeringConfigs[val];
             if (config.lat !== null) params.latitude = config.lat;
-            updateGUILock();
-            gui.updateDisplay();
+            updateGUILock(); gui.updateDisplay();
         });
 
         const f2 = gui.addFolder('2. 侵台模擬與科學紀錄');
@@ -330,12 +323,26 @@
 
             if (params.isSimulating && !params.isPaused) {
                 params.simProgress += params.moveSpeed; if (params.simProgress >= 1) params.isSimulating = false;
-                const track = steeringConfigs[params.steeringHigh]; taiwanGroup.position.x = track.s[0] + (track.e[0] - track.s[0]) * params.simProgress; taiwanGroup.position.z = track.s[1] + (track.e[1] - track.s[1]) * params.simProgress;
+                const track = steeringConfigs[params.steeringHigh]; 
+                
+                // ==========================================
+                // 修正點: 加入貝茲曲線的位移計算，讓路徑可以非線性轉向
+                // ==========================================
+                if (track.mid) {
+                    let t = params.simProgress; let invT = 1 - t;
+                    taiwanGroup.position.x = invT * invT * track.s[0] + 2 * invT * t * track.mid[0] + t * t * track.e[0];
+                    taiwanGroup.position.z = invT * invT * track.s[1] + 2 * invT * t * track.mid[1] + t * t * track.e[1];
+                } else {
+                    taiwanGroup.position.x = track.s[0] + (track.e[0] - track.s[0]) * params.simProgress; 
+                    taiwanGroup.position.z = track.s[1] + (track.e[1] - track.s[1]) * params.simProgress;
+                }
+
                 let dx = -taiwanGroup.position.x; let dz = -taiwanGroup.position.z; let distToCenter = Math.sqrt(dx*dx + dz*dz);
                 if (distToCenter < 60) { isHittingTerrain = true; terrainPenalty = (60 - distToCenter) * 0.3; currentWindShear += (60 - distToCenter) * 0.4; }
                 
                 let cx = 40 - taiwanGroup.position.x; let cy = 80 - taiwanGroup.position.z; let rainIntensity = systemEvolution / 500; 
                 let inflowAngle = 20 * Math.PI / 180; let cosA = Math.cos(inflowAngle), sinA = Math.sin(inflowAngle);
+
                 for(let y=1; y<159; y++) {
                     for(let x=1; x<79; x++) {
                         let info = twMapInfo[y*80+x];
@@ -349,8 +356,11 @@
                                 else topoFactor = Math.max(0.0, 1.0 + topoDot * 120); 
                             }
                             if (distToEye < 160) {
-                                let eyeWallProfile = (distToEye <= 12) ? distToEye / 12 : Math.pow(Math.max(0, 160 - distToEye) / 148, 1.8);
-                                rainDataArray[y * 80 + x] += eyeWallProfile * 0.3 * rainIntensity * (0.0015 / params.moveSpeed) * topoFactor;
+                                let theta = Math.atan2(vy, vx);
+                                let spiralPhase = 3 * theta - 0.15 * distToEye + frameCount * 0.05;
+                                let bandPerturbation = Math.max(0.1, Math.cos(spiralPhase));
+                                let structuralFactor = (distToEye <= 15) ? (distToEye / 15) : (Math.pow(Math.max(0, 160 - distToEye) / 145, 1.5) * bandPerturbation);
+                                rainDataArray[y * 80 + x] += structuralFactor * 0.4 * rainIntensity * (0.0015 / params.moveSpeed) * topoFactor;
                             }
                         }
                     }
@@ -433,7 +443,7 @@
             } system.geometry.attributes.position.needsUpdate = true;
         }
 
-        updateGUILock(); // 初始化鎖定狀態
+        updateGUILock(); 
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
     </script>
