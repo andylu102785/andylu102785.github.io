@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>聖嬰現象(ENSO) 3D海氣互動模擬器</title>
+    <title>聖嬰現象(ENSO) 3D海氣互動模擬器 (科學數值校準版)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000b18; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; color: #333; }
         
@@ -45,7 +45,10 @@
 
         .geo-label { position: absolute; color: white; font-weight: bold; font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none; transform: translate(-50%, -50%); opacity: 0.8; z-index: 5; transition: all 0.3s ease; }
 
+        /* Dat.GUI 右側數字輸入框樣式優化 */
+        .dg .cr.number input[type=text] { color: #00ffcc !important; font-weight: bold !important; font-size: 1.1em !important; }
         .dg.main { margin-top: 15px !important; }
+        
         @media (max-width: 900px) { #chart-container, #data-log-panel { display: none !important; } }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -66,7 +69,7 @@
         </div>
         <div class="status-box" id="status-container">
             <div id="status-text">
-                海洋尼諾指數 (ONI): <span id="val-oni" class="status-highlight">0.0</span> °C<br>
+                海洋尼諾指數 (ONI): <span id="val-oni" class="status-highlight" style="color:#0077b6;">0.0</span> °C<br>
                 東太平洋海溫異常: <span id="val-sst" class="status-highlight">0.0</span> °C<br>
                 信風狀態: <span id="val-wind" class="status-highlight">正常偏東風</span><br>
                 氣象特徵: <span id="val-weather" style="color:#0077b6; font-weight:bold;">西側降雨、東側湧升流</span>
@@ -100,8 +103,8 @@
         function makeDraggable(elmnt, handleId) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; const handle = document.getElementById(handleId);
             if (handle) { handle.onmousedown = dragMouseDown; handle.ontouchstart = dragTouchStart; }
-            function dragMouseDown(e) { if(e.target.tagName === 'BUTTON') return; e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
-            function dragTouchStart(e) { if(e.target.tagName === 'BUTTON') return; const touch = e.touches[0]; pos3 = touch.clientX; pos4 = touch.clientY; document.ontouchend = closeDragElement; document.ontouchmove = elementTouchDrag; }
+            function dragMouseDown(e) { if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return; e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
+            function dragTouchStart(e) { if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return; const touch = e.touches[0]; pos3 = touch.clientX; pos4 = touch.clientY; document.ontouchend = closeDragElement; document.ontouchmove = elementTouchDrag; }
             function elementDrag(e) { e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; }
             function elementTouchDrag(e) { pos1 = pos3 - e.touches[0].clientX; pos2 = pos4 - e.touches[0].clientY; pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; }
             function closeDragElement() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
@@ -113,15 +116,15 @@
         const params = {
             targetONI: 0.0,
             currentONI: 0.0,
-            transitionSpeed: 0.02,
+            transitionSpeed: 0.03, // 稍微加快過渡速度讓滑桿反應更即時
             isPaused: false,
             autoRecord: true,
             showAir: true,
             showCloudsRain: true,
             showThermocline: true,
-            setLaNina: () => { params.targetONI = -2.5; },
+            setLaNina: () => { params.targetONI = -1.5; }, // 反聖嬰極值
             setNormal: () => { params.targetONI = 0.0; },
-            setElNino: () => { params.targetONI = 2.8; }
+            setElNino: () => { params.targetONI = 1.8; }  // 聖嬰極值
         };
 
         let frameCount = 0;
@@ -171,11 +174,11 @@
             updateElem(document.getElementById('label-east'), 110, 25, 0);
             
             const labelUpwell = document.getElementById('label-upwell');
-            if(params.currentONI > 0.5) {
+            if(params.currentONI >= 0.5) {
                 labelUpwell.innerHTML = "🌊 湧升流 (微弱)";
                 labelUpwell.style.fontSize = "1rem";
                 labelUpwell.style.opacity = '0.6';
-            } else if (params.currentONI < -0.5) {
+            } else if (params.currentONI <= -0.5) {
                 labelUpwell.innerHTML = "🌊 湧升流 (極強)";
                 labelUpwell.style.fontSize = "1.4rem";
                 labelUpwell.style.opacity = '1';
@@ -216,7 +219,6 @@
         deepOcean.position.y = -20;
         scene.add(deepOcean);
 
-        // 湧升流立體箭頭群組
         const upwellArrows = new THREE.Group();
         const arrowMat = new THREE.MeshPhongMaterial({ color: 0x48cae4, transparent: true, opacity: 0.8, emissive: 0x0077b6 });
         for(let i=0; i<6; i++) {
@@ -236,7 +238,9 @@
         function updateOceanVisuals(oni) {
             sstCtx.clearRect(0, 0, 512, 2);
             const grd = sstCtx.createLinearGradient(0, 0, 512, 0);
-            let warmPoolEdge = Math.max(0.1, Math.min(0.9, 0.5 + (oni / 6)));
+            
+            // 將 ONI (-2~2) 映射到漸層邊界
+            let warmPoolEdge = Math.max(0.1, Math.min(0.9, 0.5 + (oni / 4.0)));
             grd.addColorStop(0, '#ff0000'); 
             grd.addColorStop(Math.max(0, warmPoolEdge - 0.2), '#ff6600');
             grd.addColorStop(warmPoolEdge, '#ffff00');
@@ -249,21 +253,22 @@
             const positions = thermocline.geometry.attributes.position.array;
             for (let i = 0; i < positions.length; i += 3) {
                 let normalizedX = (positions[i] + 100) / 200; 
-                let depth = -25 + 20 * Math.tanh(2 * normalizedX + (oni*0.5));
+                // ONI 極端化 (-2~2)，放大斜溫層坡度變化
+                let depth = -25 + 20 * Math.tanh(2 * normalizedX + (oni * 0.7));
                 positions[i+2] = -Math.abs(depth); 
             }
             thermocline.geometry.attributes.position.needsUpdate = true;
 
-            let upwellStrength = Math.max(0.2, 1.0 - (oni / 2.0)); 
+            // 湧升流強度對應 ONI = 2 時為極小值
+            let upwellStrength = Math.max(0.2, 1.0 - (oni / 1.5)); 
             
             upwellArrows.children.forEach(arrow => {
-                let speedMulti = (oni < -0.5) ? 0.35 : (oni > 0.5 ? 0.05 : 0.15); 
+                let speedMulti = (oni <= -0.5) ? 0.35 : (oni >= 0.5 ? 0.05 : 0.15); 
                 arrow.position.y += speedMulti * arrow.userData.speedOffset;
                 
                 let currentScale = Math.min(2.0, upwellStrength);
                 let tipY = arrow.position.y + (12 * currentScale);
                 
-                // 確保箭頭尖端絕對不會超過水面 (Y=0)，提早在 Y=-2 重置
                 if (tipY > -2) {
                     arrow.position.y = arrow.userData.origY;
                 }
@@ -312,7 +317,8 @@
         cloudGroup.add(rainParticles);
 
         function updateAtmosphere(oni) {
-            let convectionX = Math.max(-95, Math.min(60, -60 + (oni * 25)));
+            // 對應 ONI=-2 到 2 的對流區移動
+            let convectionX = Math.max(-95, Math.min(60, -60 + (oni * 40)));
 
             if(params.showAir) {
                 let wPos = airParticles.geometry.attributes.position.array;
@@ -326,11 +332,8 @@
 
                 let loopRy = 22;
                 
-                // ★ 物理風速修正：西風極度微弱化，且永遠不大於東風最低速
-                // 東風 (eastSpeed): 正常年 ~0.022 | 反聖嬰 ~0.037 | 聖嬰年 ~0.005 (最低保障0.005)
-                let eastSpeed = Math.max(0.005, 0.022 - (oni * 0.006)); 
-                
-                // 西風 (westSpeed): 正常年 ~0.003 | 反聖嬰 ~0.002 | 聖嬰年 ~0.004 (強制最高不超過0.004)
+                // ★ 物理風速精準修正 (配合 ONI 範圍 2)
+                let eastSpeed = Math.max(0.005, 0.022 - (oni * 0.008)); 
                 let westSpeed = Math.max(0.002, Math.min(0.004, 0.003 + (oni * 0.001)));
 
                 for(let i=0; i<AIR_COUNT; i++) {
@@ -387,17 +390,20 @@
                 plugins: { legend: { display: true, labels: { font: { size: 10 } } } }, 
                 scales: { 
                     x: { display: true, ticks: { maxTicksLimit: 10, font: {size: 9} } }, 
-                    y: { type: 'linear', display: true, min: -4, max: 4, grid: { color: (ctx) => ctx.tick.value === 0 ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.1)', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } } 
+                    y: { type: 'linear', display: true, min: -2.5, max: 2.5, grid: { color: (ctx) => ctx.tick.value === 0 ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.1)', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } } 
                 } 
             } 
         });
 
-        const gui = new dat.GUI({ width: 320 });
+        // --- GUI 控制面板設定 (加入精準數值設定) ---
+        const gui = new dat.GUI({ width: 340 });
         const f1 = gui.addFolder('1. 聖嬰現象情境切換');
         f1.add(params, 'setLaNina').name('❄️ 觸發：反聖嬰現象 (La Niña)');
         f1.add(params, 'setNormal').name('🌊 觸發：正常狀態 (Normal)');
         f1.add(params, 'setElNino').name('🔥 觸發：聖嬰現象 (El Niño)');
-        f1.add(params, 'targetONI', -2, 2,0.1).name('手動調整 ONI 指數').listen();
+        
+        // 設定 ONI 拉桿，範圍 -2 到 2，間距 0.1，並允許在右側直接手動輸入
+        f1.add(params, 'targetONI', -2.0, 2.0).step(0.1).name('手動調整 ONI 指數').listen();
         
         const f2 = gui.addFolder('2. 視覺化圖層開關');
         f2.add(params, 'showThermocline').name('顯示海底斜溫層');
@@ -422,13 +428,15 @@
             const sstAnomaly = oni * 0.8; 
             
             let stageClass = "normal-stage", stageName = "正常年 (Normal)", windDesc = "強勁偏東風 (東南信風)", weatherDesc = "西側多雨、東側湧升流正常";
-            if (oni > 0.5) { 
+            
+            // 精準對齊氣象定義：ONI >= 0.5 為聖嬰，ONI <= -0.5 為反聖嬰
+            if (oni >= 0.5) { 
                 stageClass = "elnino-stage"; 
                 stageName = "聖嬰現象 (El Niño)"; 
-                windDesc = oni > 1.5 ? "極微弱偏西風" : "信風極度減弱"; 
+                windDesc = oni >= 1.0 ? "極微弱偏西風" : "信風極度減弱"; 
                 weatherDesc = "對流東移中太平洋，湧升流減弱"; 
             } 
-            else if (oni < -0.5) { 
+            else if (oni <= -0.5) { 
                 stageClass = "lanina-stage"; 
                 stageName = "反聖嬰現象 (La Niña)"; 
                 windDesc = "信風異常增強"; 
@@ -439,8 +447,9 @@
             document.getElementById('stage-badge').className = "stage-badge " + stageClass;
             document.getElementById('stage-badge').innerHTML = stageName + pauseHTML;
 
-            document.getElementById('val-oni').innerText = oni.toFixed(2);
-            document.getElementById('val-sst').innerText = (sstAnomaly > 0 ? "+" : "") + sstAnomaly.toFixed(2);
+            // 調整顯示格式為小數點後 1 位
+            document.getElementById('val-oni').innerText = oni.toFixed(1);
+            document.getElementById('val-sst').innerText = (sstAnomaly > 0 ? "+" : "") + sstAnomaly.toFixed(1);
             document.getElementById('val-wind').innerText = windDesc;
             document.getElementById('val-weather').innerText = weatherDesc;
 
@@ -450,10 +459,10 @@
                 let row = logTable.insertRow(0);
                 if (logTable.rows.length > 30) logTable.deleteRow(30); 
                 
-                row.innerHTML = `<td>第 ${simMonth} 個月</td><td>${oni.toFixed(2)}</td><td>${sstAnomaly.toFixed(2)}</td><td>${windDesc.split(' ')[0]}</td><td>${stageName.split(' ')[0]}</td>`;
+                row.innerHTML = `<td>第 ${simMonth} 個月</td><td>${oni.toFixed(1)}</td><td>${sstAnomaly.toFixed(1)}</td><td>${windDesc.split(' ')[0]}</td><td>${stageName.split(' ')[0]}</td>`;
                 
                 ensoChart.data.labels.push('M' + simMonth);
-                ensoChart.data.datasets[0].data.push(oni.toFixed(2));
+                ensoChart.data.datasets[0].data.push(oni.toFixed(1));
                 if (ensoChart.data.labels.length > 30) {
                     ensoChart.data.labels.shift();
                     ensoChart.data.datasets[0].data.shift();
