@@ -397,7 +397,7 @@
         f1.add(params, 'setLaNina').name('❄️ 觸發：反聖嬰現象 (La Niña)');
         f1.add(params, 'setNormal').name('🌊 觸發：正常狀態 (Normal)');
         f1.add(params, 'setElNino').name('🔥 觸發：聖嬰現象 (El Niño)');
-        f1.add(params, 'targetONI', -3, 3).name('手動調整 ONI 指數').listen();
+        f1.add(params, 'targetONI', -2, 2,0.1).name('手動調整 ONI 指數').listen();
         
         const f2 = gui.addFolder('2. 視覺化圖層開關');
         f2.add(params, 'showThermocline').name('顯示海底斜溫層');
