@@ -43,7 +43,7 @@
         .gradient-bar { height: 12px; width: 100%; background: linear-gradient(to right, #0044ff, #00ccff, #ffff00, #ff6600, #ff0000); border-radius: 6px; margin-top: 5px; }
         .legend-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #555; margin-top: 2px; }
 
-        .geo-label { position: absolute; color: white; font-weight: bold; font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none; transform: translate(-50%, -50%); opacity: 0.8; z-index: 5; }
+        .geo-label { position: absolute; color: white; font-weight: bold; font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none; transform: translate(-50%, -50%); opacity: 0.8; z-index: 5; transition: all 0.3s ease; }
 
         .dg.main { margin-top: 15px !important; }
         @media (max-width: 900px) { #chart-container, #data-log-panel { display: none !important; } }
@@ -57,8 +57,7 @@
 
     <div id="label-west" class="geo-label">西太平洋<br>(印尼 / 澳洲)</div>
     <div id="label-east" class="geo-label">東太平洋<br>(南美洲)</div>
-    <!-- 新增湧升流文字標籤 -->
-    <div id="label-upwell" class="geo-label" style="color: #48cae4; text-shadow: 0 0 10px #48cae4, 0 2px 4px #000; font-size: 1.3rem;">🌊 湧升流</div>
+    <div id="label-upwell" class="geo-label" style="color: #48cae4; text-shadow: 0 0 10px #48cae4, 0 2px 4px #000;">🌊 湧升流</div>
 
     <div id="ui-panel" class="panel">
         <div class="drag-handle" id="ui-drag-handle"><h1 class="drag-title-text">ENSO 海氣互動模擬器</h1></div>
@@ -76,7 +75,7 @@
         <div class="sst-legend">
             海表溫度 (SST) 示意圖例
             <div class="gradient-bar"></div>
-            <div class="legend-labels"><span>冷 (湧升流)</span><span>正常</span><span>暖 (暖水池)</span></div>
+            <div class="legend-labels"><span>冷 (深海/湧升流)</span><span>正常</span><span>暖 (暖水池)</span></div>
         </div>
     </div>
 
@@ -111,7 +110,6 @@
         makeDraggable(document.getElementById("data-log-panel"), "log-drag-handle"); 
         makeDraggable(document.getElementById("chart-container"), "chart-drag-handle");
 
-        // --- 全域模擬參數 ---
         const params = {
             targetONI: 0.0,
             currentONI: 0.0,
@@ -129,7 +127,6 @@
         let frameCount = 0;
         let simMonth = 0;
 
-        // --- Three.js 場景初始化 ---
         const scene = new THREE.Scene(); 
         scene.background = new THREE.Color('#001020'); 
         scene.fog = new THREE.FogExp2('#001020', 0.003);
@@ -149,7 +146,6 @@
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(50, 100, 50); scene.add(dirLight);
 
-        // --- 建立地形 ---
         function createLandmass(xPos, width, colorHex) {
             const geo = new THREE.BoxGeometry(width, 20, 60);
             const mat = new THREE.MeshPhongMaterial({ color: colorHex, flatShading: true });
@@ -160,7 +156,6 @@
         createLandmass(-110, 20, 0x3d5a80); 
         createLandmass(110, 20, 0x8f7a66);
 
-        // 標籤座標追蹤共用函式
         const tempV = new THREE.Vector3();
         function updateElem(elem, objX, objY, objZ) {
             if (!elem) return;
@@ -175,17 +170,24 @@
             updateElem(document.getElementById('label-west'), -110, 25, 0);
             updateElem(document.getElementById('label-east'), 110, 25, 0);
             
-            // 湧升流標籤控制 (聖嬰年關閉)
+            // 根據 ENSO 狀態動態調整湧升流標籤
             const labelUpwell = document.getElementById('label-upwell');
-            if(params.currentONI < 0.5) {
-                labelUpwell.style.display = 'block';
-                updateElem(labelUpwell, 80, -10, 20); // 放在湧升流上方
+            if(params.currentONI > 0.5) {
+                labelUpwell.innerHTML = "🌊 湧升流 (微弱)";
+                labelUpwell.style.fontSize = "1rem";
+                labelUpwell.style.opacity = '0.6';
+            } else if (params.currentONI < -0.5) {
+                labelUpwell.innerHTML = "🌊 湧升流 (極強)";
+                labelUpwell.style.fontSize = "1.4rem";
+                labelUpwell.style.opacity = '1';
             } else {
-                labelUpwell.style.display = 'none';
+                labelUpwell.innerHTML = "🌊 湧升流";
+                labelUpwell.style.fontSize = "1.2rem";
+                labelUpwell.style.opacity = '0.9';
             }
+            updateElem(labelUpwell, 80, -10, 20); // 鎖定在水下
         }
 
-        // --- 海洋系統 ---
         const OCEAN_WIDTH = 200;
         const OCEAN_DEPTH = 60;
         
@@ -215,27 +217,26 @@
         deepOcean.position.y = -20;
         scene.add(deepOcean);
 
-        // ★ 新增：3D 湧升流立體箭頭群組
+        // ★ 修改重點：湧升流立體箭頭群組
         const upwellArrows = new THREE.Group();
         const arrowMat = new THREE.MeshPhongMaterial({ color: 0x48cae4, transparent: true, opacity: 0.8, emissive: 0x0077b6 });
-        for(let i=0; i<5; i++) {
+        for(let i=0; i<6; i++) {
             const arrow = new THREE.Group();
-            const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 12, 8), arrowMat);
-            cylinder.position.y = 6;
-            const cone = new THREE.Mesh(new THREE.ConeGeometry(3, 5, 8), arrowMat);
-            cone.position.y = 12 + 2.5;
+            // 縮小箭頭高度，精算位置
+            const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 8, 8), arrowMat);
+            cylinder.position.y = 4; // 柱體中心
+            const cone = new THREE.Mesh(new THREE.ConeGeometry(3, 4, 8), arrowMat);
+            cone.position.y = 8 + 2; // 圓錐體中心，尖端在局部座標 y=12
             arrow.add(cylinder); arrow.add(cone);
             
-            // 隨機分佈在東側水底
-            arrow.position.set(70 + Math.random()*15, -35 - Math.random()*15, (Math.random()-0.5)*20);
+            // 從更深的海底開始
+            arrow.position.set(70 + Math.random()*15, -45 - Math.random()*10, (Math.random()-0.5)*20);
             arrow.userData = { origY: arrow.position.y, speedOffset: 0.5 + Math.random()*0.5 };
             upwellArrows.add(arrow);
         }
         scene.add(upwellArrows);
 
-
         function updateOceanVisuals(oni) {
-            // 海溫漸層
             sstCtx.clearRect(0, 0, 512, 2);
             const grd = sstCtx.createLinearGradient(0, 0, 512, 0);
             let warmPoolEdge = Math.max(0.1, Math.min(0.9, 0.5 + (oni / 6)));
@@ -248,7 +249,6 @@
             sstCtx.fillRect(0, 0, 512, 2);
             sstTexture.needsUpdate = true;
 
-            // 斜溫層變形
             const positions = thermocline.geometry.attributes.position.array;
             for (let i = 0; i < positions.length; i += 3) {
                 let normalizedX = (positions[i] + 100) / 200; 
@@ -257,30 +257,30 @@
             }
             thermocline.geometry.attributes.position.needsUpdate = true;
 
-            // ★ 更新湧升流立體箭頭
-            let upwellStrength = Math.max(0, 1.0 - (oni / 1.5)); // Normal=1, LaNina=~2.6, ElNino=0
-            if (upwellStrength > 0.1) {
-                upwellArrows.visible = true;
-                upwellArrows.children.forEach(arrow => {
-                    // La Nina 速度快，Normal 速度一般
-                    arrow.position.y += (oni < 0 ? 0.4 : 0.2) * arrow.userData.speedOffset;
-                    if (arrow.position.y > -8) {
-                        arrow.position.y = arrow.userData.origY; // 升到海面附近後重置到底部
-                    }
-                    // 根據強度調整箭頭大小
-                    let scale = Math.min(2.0, upwellStrength);
-                    arrow.scale.set(scale, scale, scale);
-                });
-            } else {
-                upwellArrows.visible = false; // 聖嬰年完全隱藏湧升流
-            }
+            // ★ 修改重點：湧升流不再消失，且不出水面
+            let upwellStrength = Math.max(0.2, 1.0 - (oni / 2.0)); // 最小強度保證有 0.2
+            
+            upwellArrows.children.forEach(arrow => {
+                // 聖嬰年速度極慢，反聖嬰年速度快
+                let speedMulti = (oni < -0.5) ? 0.35 : (oni > 0.5 ? 0.05 : 0.15); 
+                arrow.position.y += speedMulti * arrow.userData.speedOffset;
+                
+                let currentScale = Math.min(2.0, upwellStrength);
+                // 箭頭總長度大約是 12 * 縮放比例。計算尖端 Y 座標。
+                let tipY = arrow.position.y + (12 * currentScale);
+                
+                // 海面位於 Y=0。當箭頭尖端接近 -2 (水面下) 時，重置回海底
+                if (tipY > -2) {
+                    arrow.position.y = arrow.userData.origY;
+                }
+                
+                arrow.scale.set(currentScale, currentScale, currentScale);
+            });
         }
 
-        // --- 粒子與雲系系統 ---
         const AIR_COUNT = 1500;
         const RAIN_COUNT = 800;
 
-        // 沃克環流 (大氣粒子)
         const airGeo = new THREE.BufferGeometry();
         const airPos = new Float32Array(AIR_COUNT * 3);
         const airExtra = new Float32Array(AIR_COUNT * 3); 
@@ -294,7 +294,6 @@
         const airParticles = new THREE.Points(airGeo, new THREE.PointsMaterial({ color: 0xade8f4, size: 2.0, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }));
         scene.add(airParticles);
 
-        // 實體 3D 雲群組
         const cloudGroup = new THREE.Group();
         const cloudGeo = new THREE.SphereGeometry(6, 16, 16);
         const cloudMat = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, transparent: true, opacity: 0.95 });
@@ -307,7 +306,6 @@
         cloudGroup.position.y = 20;
         scene.add(cloudGroup);
 
-        // 降雨系統
         const rainGeo = new THREE.BufferGeometry();
         const rainPos = new Float32Array(RAIN_COUNT * 3);
         for(let i=0; i<RAIN_COUNT; i++) {
@@ -319,7 +317,6 @@
         const rainParticles = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: 0x00aaff, size: 2.0, transparent: true, opacity: 0.8, blending: THREE.NormalBlending, depthWrite: false }));
         cloudGroup.add(rainParticles);
 
-        // 雙環流修正
         function updateAtmosphere(oni) {
             let convectionX = Math.max(-95, Math.min(60, -60 + (oni * 25)));
 
@@ -382,7 +379,6 @@
             } else { cloudGroup.visible = false; }
         }
 
-        // --- Chart.js 時序圖設定 ---
         const ctxChart = document.getElementById('ensoChart').getContext('2d');
         const ensoChart = new Chart(ctxChart, { 
             type: 'line', 
@@ -397,7 +393,6 @@
             } 
         });
 
-        // --- GUI 控制面板設定 ---
         const gui = new dat.GUI({ width: 320 });
         const f1 = gui.addFolder('1. 聖嬰現象情境切換');
         f1.add(params, 'setLaNina').name('❄️ 觸發：反聖嬰現象 (La Niña)');
@@ -427,8 +422,8 @@
             const oni = params.currentONI;
             const sstAnomaly = oni * 0.8; 
             
-            let stageClass = "normal-stage", stageName = "正常年 (Normal)", windDesc = "強勁偏東風 (東南信風)", weatherDesc = "西側多雨、東側湧升流豐富";
-            if (oni > 0.5) { stageClass = "elnino-stage"; stageName = "聖嬰現象 (El Niño)"; windDesc = oni > 1.5 ? "異常偏西風爆發" : "信風極度減弱"; weatherDesc = "對流東移中太平洋，湧升流消失"; } 
+            let stageClass = "normal-stage", stageName = "正常年 (Normal)", windDesc = "強勁偏東風 (東南信風)", weatherDesc = "西側多雨、東側湧升流正常";
+            if (oni > 0.5) { stageClass = "elnino-stage"; stageName = "聖嬰現象 (El Niño)"; windDesc = oni > 1.5 ? "異常偏西風爆發" : "信風極度減弱"; weatherDesc = "對流東移中太平洋，湧升流減弱"; } 
             else if (oni < -0.5) { stageClass = "lanina-stage"; stageName = "反聖嬰現象 (La Niña)"; windDesc = "信風異常增強"; weatherDesc = "西側劇烈豪雨，東側極度寒冷乾燥"; }
 
             const pauseHTML = params.isPaused ? `<span class="paused-badge">暫停中</span>` : "";
@@ -458,7 +453,6 @@
             }
         }
 
-        // --- 主渲染迴圈 ---
         function animate() {
             requestAnimationFrame(animate);
 
