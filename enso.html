@@ -170,7 +170,6 @@
             updateElem(document.getElementById('label-west'), -110, 25, 0);
             updateElem(document.getElementById('label-east'), 110, 25, 0);
             
-            // 根據 ENSO 狀態動態調整湧升流標籤
             const labelUpwell = document.getElementById('label-upwell');
             if(params.currentONI > 0.5) {
                 labelUpwell.innerHTML = "🌊 湧升流 (微弱)";
@@ -185,7 +184,7 @@
                 labelUpwell.style.fontSize = "1.2rem";
                 labelUpwell.style.opacity = '0.9';
             }
-            updateElem(labelUpwell, 80, -10, 20); // 鎖定在水下
+            updateElem(labelUpwell, 80, -10, 20);
         }
 
         const OCEAN_WIDTH = 200;
@@ -217,19 +216,17 @@
         deepOcean.position.y = -20;
         scene.add(deepOcean);
 
-        // ★ 修改重點：湧升流立體箭頭群組
+        // 湧升流立體箭頭群組
         const upwellArrows = new THREE.Group();
         const arrowMat = new THREE.MeshPhongMaterial({ color: 0x48cae4, transparent: true, opacity: 0.8, emissive: 0x0077b6 });
         for(let i=0; i<6; i++) {
             const arrow = new THREE.Group();
-            // 縮小箭頭高度，精算位置
             const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 8, 8), arrowMat);
-            cylinder.position.y = 4; // 柱體中心
+            cylinder.position.y = 4; 
             const cone = new THREE.Mesh(new THREE.ConeGeometry(3, 4, 8), arrowMat);
-            cone.position.y = 8 + 2; // 圓錐體中心，尖端在局部座標 y=12
+            cone.position.y = 8 + 2; 
             arrow.add(cylinder); arrow.add(cone);
             
-            // 從更深的海底開始
             arrow.position.set(70 + Math.random()*15, -45 - Math.random()*10, (Math.random()-0.5)*20);
             arrow.userData = { origY: arrow.position.y, speedOffset: 0.5 + Math.random()*0.5 };
             upwellArrows.add(arrow);
@@ -257,19 +254,16 @@
             }
             thermocline.geometry.attributes.position.needsUpdate = true;
 
-            // ★ 修改重點：湧升流不再消失，且不出水面
-            let upwellStrength = Math.max(0.2, 1.0 - (oni / 2.0)); // 最小強度保證有 0.2
+            let upwellStrength = Math.max(0.2, 1.0 - (oni / 2.0)); 
             
             upwellArrows.children.forEach(arrow => {
-                // 聖嬰年速度極慢，反聖嬰年速度快
                 let speedMulti = (oni < -0.5) ? 0.35 : (oni > 0.5 ? 0.05 : 0.15); 
                 arrow.position.y += speedMulti * arrow.userData.speedOffset;
                 
                 let currentScale = Math.min(2.0, upwellStrength);
-                // 箭頭總長度大約是 12 * 縮放比例。計算尖端 Y 座標。
                 let tipY = arrow.position.y + (12 * currentScale);
                 
-                // 海面位於 Y=0。當箭頭尖端接近 -2 (水面下) 時，重置回海底
+                // 確保箭頭尖端絕對不會超過水面 (Y=0)，提早在 Y=-2 重置
                 if (tipY > -2) {
                     arrow.position.y = arrow.userData.origY;
                 }
@@ -331,8 +325,13 @@
                 let loopWestRx = Math.abs(convectionX - (-95)) / 2 + 5;
 
                 let loopRy = 22;
-                let eastSpeed = Math.max(0.005, 0.02 - (oni * 0.005));
-                let westSpeed = Math.max(0.005, 0.02 + (oni * 0.005));
+                
+                // ★ 物理風速修正：西風極度微弱化，且永遠不大於東風最低速
+                // 東風 (eastSpeed): 正常年 ~0.022 | 反聖嬰 ~0.037 | 聖嬰年 ~0.005 (最低保障0.005)
+                let eastSpeed = Math.max(0.005, 0.022 - (oni * 0.006)); 
+                
+                // 西風 (westSpeed): 正常年 ~0.003 | 反聖嬰 ~0.002 | 聖嬰年 ~0.004 (強制最高不超過0.004)
+                let westSpeed = Math.max(0.002, Math.min(0.004, 0.003 + (oni * 0.001)));
 
                 for(let i=0; i<AIR_COUNT; i++) {
                     let isEastCell = (i < AIR_COUNT / 2);
@@ -423,8 +422,18 @@
             const sstAnomaly = oni * 0.8; 
             
             let stageClass = "normal-stage", stageName = "正常年 (Normal)", windDesc = "強勁偏東風 (東南信風)", weatherDesc = "西側多雨、東側湧升流正常";
-            if (oni > 0.5) { stageClass = "elnino-stage"; stageName = "聖嬰現象 (El Niño)"; windDesc = oni > 1.5 ? "異常偏西風爆發" : "信風極度減弱"; weatherDesc = "對流東移中太平洋，湧升流減弱"; } 
-            else if (oni < -0.5) { stageClass = "lanina-stage"; stageName = "反聖嬰現象 (La Niña)"; windDesc = "信風異常增強"; weatherDesc = "西側劇烈豪雨，東側極度寒冷乾燥"; }
+            if (oni > 0.5) { 
+                stageClass = "elnino-stage"; 
+                stageName = "聖嬰現象 (El Niño)"; 
+                windDesc = oni > 1.5 ? "極微弱偏西風" : "信風極度減弱"; 
+                weatherDesc = "對流東移中太平洋，湧升流減弱"; 
+            } 
+            else if (oni < -0.5) { 
+                stageClass = "lanina-stage"; 
+                stageName = "反聖嬰現象 (La Niña)"; 
+                windDesc = "信風異常增強"; 
+                weatherDesc = "西側劇烈豪雨，東側極度寒冷乾燥"; 
+            }
 
             const pauseHTML = params.isPaused ? `<span class="paused-badge">暫停中</span>` : "";
             document.getElementById('stage-badge').className = "stage-badge " + stageClass;
