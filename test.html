@@ -3,50 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>聖嬰現象(ENSO) 3D海氣互動模擬器 </title>
+    <title>颱風模擬器(教學版)</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000b18; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; color: #333; }
+        body { margin: 0; overflow: hidden; background-color: #00152b; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
         
         .panel { pointer-events: auto; z-index: 100; position: absolute; }
-        .drag-handle { cursor: move; user-select: none; border-bottom: 2px solid #2a9d8f; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .drag-handle { cursor: move; user-select: none; border-bottom: 2px solid #ffc300; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .drag-handle::before { content: '⠿'; color: #ccc; margin-right: 8px; font-size: 1.2em; }
         .drag-title-text { flex-grow: 1; font-size: 1.1rem; color: #003566; font-weight: bold; margin: 0; }
 
-        #ui-panel { top: 15px; left: 15px; background: rgba(240, 248, 255, 0.95); padding: 15px 20px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 360px; }
+        #ui-panel { top: 15px; left: 15px; background: rgba(255, 255, 255, 0.95); padding: 15px 20px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-width: 340px; }
         
-        .stage-badge { display: inline-block; padding: 6px 14px; margin-bottom: 10px; border-radius: 20px; font-weight: bold; font-size: 1.2rem; color: #fff; transition: background 0.5s; text-align: center; width: calc(100% - 28px); }
-        .normal-stage { background: #2a9d8f; } 
-        .elnino-stage { background: #e76f51; } 
-        .lanina-stage { background: #0077b6; }
-        .paused-badge { background-color: #e63946; border: 1px solid #fff; padding: 2px 6px; border-radius: 6px; font-size: 0.8rem; margin-left: 10px; animation: blink 1.5s infinite; vertical-align: middle;}
+        .stage-badge { display: inline-block; padding: 4px 10px; margin-bottom: 10px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; color: #fff; background: #6c757d; transition: background 0.5s; }
+        .stage-0 { background: #adb5bd; } .stage-1 { background: #2a9d8f; } .stage-2 { background: #e9c46a; color: #333; } .stage-3 { background: #e76f51; }
 
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .status-box { padding: 12px; border-radius: 8px; background: #f8f9fa; border-left: 5px solid #ccc; transition: all 0.3s ease; }
+        #status-text { font-weight: bold; font-size: 0.95rem; color: #333; line-height: 1.5; }
+        .forming { border-left-color: #2a9d8f; color: #1e6b61 !important; background: #e9f5f4 !important; }
+        .failing { border-left-color: #e76f51; color: #9e2a2b !important; background: #fdf0ed !important; }
+        .terrain-hit { border-left-color: #6c584c !important; background: #ede0d4 !important; color: #4a3627 !important; }
+        .paused-box { opacity: 0.85; border-style: dashed; }
+        
+        #chart-container { bottom: 20px; right: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 380px; height: 220px; }
+        .chart-drag-handle { cursor: move; font-size: 0.8rem; color: #666; text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 4px; user-select: none; }
 
-        .status-box { padding: 12px; border-radius: 8px; background: #fff; border-left: 5px solid #ccc; transition: all 0.3s ease; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
-        #status-text { font-size: 0.95rem; color: #333; line-height: 1.6; }
-        .status-highlight { font-weight: bold; font-size: 1.1em; }
+        #rain-map-container { bottom: 20px; left: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 160px; }
+        .rain-drag-handle { cursor: move; font-size: 0.9rem; font-weight: bold; color: #003566; margin-bottom: 8px; text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 4px; user-select: none; }
+        #rain-canvas { width: 100%; height: 180px; background: #e0f7fa; border-radius: 6px; display: block; image-rendering: pixelated; pointer-events: none; }
+        .rain-legend { display: flex; height: 8px; margin-top: 8px; border-radius: 4px; overflow: hidden; }
+        .rain-legend span { flex: 1; }
+        .rain-labels { font-size: 0.65rem; display: flex; color: #555; margin-top: 4px; }
+        .rain-labels span { flex: 1; text-align: center; font-weight: bold; }
 
-        #chart-container { bottom: 20px; right: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 420px; height: 240px; }
-        .chart-drag-handle { cursor: move; font-size: 0.9rem; color: #003566; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 4px; user-select: none; }
-
-        #data-log-panel { top: 15px; right: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 420px; max-height: 250px; overflow-y: auto; }
+        #data-log-panel { top: 15px; right: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 400px; max-height: 250px; overflow-y: auto; display: none; }
         .log-title { font-size: 0.95rem; font-weight: bold; color: #003566; margin-bottom: 8px; border-bottom: 2px solid #2a9d8f; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none;}
         .log-btn { background: #2a9d8f; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
         .log-btn:hover { background: #21867a; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: center; }
-        th { background: #e9ecef; padding: 6px; position: sticky; top: 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; text-align: center; pointer-events: none; }
+        th { background: #f1f3f5; padding: 6px; position: sticky; top: 0; }
         td { padding: 6px; border-bottom: 1px solid #eee; }
-        tr:nth-child(even) { background: #f8f9fa; }
-        tr:hover { background: #e2e6ea; }
+        tr:hover { background: #f8f9fa; }
 
-        .sst-legend { margin-top: 15px; font-size: 0.85rem; font-weight: bold; }
-        .gradient-bar { height: 12px; width: 100%; background: linear-gradient(to right, #0044ff, #00ccff, #ffff00, #ff6600, #ff0000); border-radius: 6px; margin-top: 5px; }
-        .legend-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #555; margin-top: 2px; }
-
-        .geo-label { position: absolute; color: white; font-weight: bold; font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none; transform: translate(-50%, -50%); opacity: 0.8; }
-
-        .dg.main { margin-top: 15px !important; }
-        @media (max-width: 900px) { #chart-container, #data-log-panel { display: none !important; } }
+        .vector-legend { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 0.8rem; display: none; pointer-events: none; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
+        .color-box { width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; }
+        .pause-badge { display: inline-block; background: #e63946; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-left: 5px; animation: blink 2s infinite; }
+        
+        .dg.main .disabled { pointer-events: none; opacity: 0.4; filter: grayscale(1); }
+        @media (max-width: 768px) { #chart-container, #data-log-panel { display: none !important; } #rain-map-container { left: auto; right: 20px; } }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -55,393 +59,392 @@
 </head>
 <body>
 
-    <div id="label-west" class="geo-label">西太平洋<br>(印尼 / 澳洲)</div>
-    <div id="label-east" class="geo-label">東太平洋<br>(南美洲)</div>
-
     <div id="ui-panel" class="panel">
-        <div class="drag-handle" id="ui-drag-handle"><h1 class="drag-title-text">ENSO 海氣互動模擬器</h1></div>
-        <div id="stage-badge-container">
-            <div id="stage-badge" class="stage-badge normal-stage">正常年 (Normal)</div>
-        </div>
-        <div class="status-box" id="status-container">
-            <div id="status-text">
-                海洋尼諾指數 (ONI): <span id="val-oni" class="status-highlight">0.0</span> °C<br>
-                東太平洋海溫異常: <span id="val-sst" class="status-highlight">0.0</span> °C<br>
-                信風狀態: <span id="val-wind" class="status-highlight">正常偏東風</span><br>
-                氣象特徵: <span id="val-weather" style="color:#0077b6; font-weight:bold;">西側降雨、東側湧升流</span>
-            </div>
-        </div>
-        <div class="sst-legend">
-            海表溫度 (SST) 示意圖例
-            <div class="gradient-bar"></div>
-            <div class="legend-labels"><span>冷 (湧升流)</span><span>正常</span><span>暖 (暖水池)</span></div>
+        <div class="drag-handle" id="ui-drag-handle"><h1 class="drag-title-text">颱風模擬器(教學版)</h1></div>
+        <div id="stage-badge" class="stage-badge stage-0">熱帶擾動</div>
+        <div class="status-box" id="status-container"><div id="status-text">正在初始化大氣環境...</div></div>
+        <div class="vector-legend" id="vector-legend">
+            <b>螺旋風場向量圖例：</b>
+            <div class="legend-item"><div class="color-box" style="background:#ff3333;"></div>低層旋入氣流 (輻合)</div>
+            <div class="legend-item"><div class="color-box" style="background:#ffca3a;"></div>眼牆垂直上升氣流</div>
+            <div class="legend-item"><div class="color-box" style="background:#48cae4;"></div>高層旋出氣流 (輻散)</div>
         </div>
     </div>
 
+    <!-- 觀測紀錄表 -->
     <div id="data-log-panel" class="panel">
         <div class="log-title" id="log-drag-handle">
-            <span>⠿ 海氣象科學觀測紀錄</span>
+            <span>⠿ 實時科學觀測紀錄表</span>
             <button class="log-btn" onclick="exportCSV()">匯出 CSV</button>
         </div>
         <table id="log-table">
-            <thead><tr><th>時間(月)</th><th>ONI 指數</th><th>東太平洋 ΔSST</th><th>信風狀態</th><th>狀態判定</th></tr></thead>
+            <thead><tr><th>時間/歷程</th><th>緯度(°)</th><th>氣壓(hPa)</th><th>風速(m/s)</th><th>距台(km)</th><th>狀態</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
 
+    <!-- 累積雨量圖 -->
+    <div id="rain-map-container" class="panel">
+        <div class="rain-drag-handle" id="rain-drag-handle">⠿ 累積雨量估計 (mm)</div>
+        <canvas id="rain-canvas" width="80" height="160"></canvas>
+        <div class="rain-legend">
+            <span style="background: #2d6a4f;"></span><span style="background: #0096ff;"></span><span style="background: #00ff00;"></span>
+            <span style="background: #ffff00;"></span><span style="background: #ffa500;"></span><span style="background: #ff0000;"></span><span style="background: #800080;"></span>
+        </div>
+        <div class="rain-labels"><span>0</span><span>10</span><span>50</span><span>130</span><span>200</span><span>350</span><span>500+</span></div>
+    </div>
+
+    <!-- 自動時序圖 -->
     <div id="chart-container" class="panel">
-        <div class="chart-drag-handle" id="chart-drag-handle">⠿ ENSO 實時監測時序圖</div>
-        <canvas id="ensoChart"></canvas>
+        <div class="chart-drag-handle" id="chart-drag-handle">⠿ 自動時序觀測儀</div>
+        <canvas id="typhoonChart"></canvas>
     </div>
 
     <script>
-        // --- UI 拖曳功能 ---
         function makeDraggable(elmnt, handleId) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; const handle = document.getElementById(handleId);
             if (handle) { handle.onmousedown = dragMouseDown; handle.ontouchstart = dragTouchStart; }
-            function dragMouseDown(e) { if(e.target.tagName === 'BUTTON') return; e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
-            function dragTouchStart(e) { if(e.target.tagName === 'BUTTON') return; const touch = e.touches[0]; pos3 = touch.clientX; pos4 = touch.clientY; document.ontouchend = closeDragElement; document.ontouchmove = elementTouchDrag; }
-            function elementDrag(e) { e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; }
-            function elementTouchDrag(e) { pos1 = pos3 - e.touches[0].clientX; pos2 = pos4 - e.touches[0].clientY; pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; }
+            function dragMouseDown(e) { if(e.target.tagName === 'BUTTON') return; e.preventDefault(); initDragState(e.clientX, e.clientY); document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
+            function dragTouchStart(e) { if(e.target.tagName === 'BUTTON') return; const touch = e.touches[0]; initDragState(touch.clientX, touch.clientY); document.ontouchend = closeDragElement; document.ontouchmove = elementTouchDrag; }
+            function initDragState(clientX, clientY) { elmnt.style.top = elmnt.offsetTop + "px"; elmnt.style.left = elmnt.offsetLeft + "px"; elmnt.style.bottom = "auto"; elmnt.style.right = "auto"; pos3 = clientX; pos4 = clientY; }
+            function elementDrag(e) { e.preventDefault(); performDrag(e.clientX, e.clientY); }
+            function elementTouchDrag(e) { performDrag(e.touches[0].clientX, e.touches[0].clientY); }
+            function performDrag(clientX, clientY) { pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; }
             function closeDragElement() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
         }
-        makeDraggable(document.getElementById("ui-panel"), "ui-drag-handle"); 
-        makeDraggable(document.getElementById("data-log-panel"), "log-drag-handle"); 
-        makeDraggable(document.getElementById("chart-container"), "chart-drag-handle");
+        makeDraggable(document.getElementById("ui-panel"), "ui-drag-handle"); makeDraggable(document.getElementById("data-log-panel"), "log-drag-handle"); makeDraggable(document.getElementById("rain-map-container"), "rain-drag-handle"); makeDraggable(document.getElementById("chart-container"), "chart-drag-handle");
 
-        // --- 全域模擬參數 ---
-        const params = {
-            targetONI: 0.0,
-            currentONI: 0.0,
-            transitionSpeed: 0.02,
-            isPaused: false,
-            autoRecord: true,
-            showAir: true,
-            showCloudsRain: true,
-            showThermocline: true,
-            setLaNina: () => { params.targetONI = -2.5; },
-            setNormal: () => { params.targetONI = 0.0; },
-            setElNino: () => { params.targetONI = 2.8; }
-        };
+        let systemEvolution = 0; let frameCount = 0; let lastRecordedProgPct = -1; 
+        const scene = new THREE.Scene(); scene.background = new THREE.Color('#00152b'); scene.fog = new THREE.FogExp2('#00152b', 0.002);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000); camera.position.set(0, 160, 260);
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(window.devicePixelRatio); renderer.setSize(window.innerWidth, window.innerHeight); renderer.localClippingEnabled = false; document.body.appendChild(renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true;
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85); scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6); dirLight.position.set(100, 200, 100); scene.add(dirLight);
+        const clipPlane = new THREE.Plane(new THREE.Vector3(1, 0, 0), 0);
+        const ocean = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshPhongMaterial({ color: 0x002b5e, transparent: true, opacity: 0.85 })); ocean.rotation.x = -Math.PI / 2; scene.add(ocean);
 
-        let frameCount = 0;
-        let simMonth = 0;
+        const wmCanvas = document.createElement('canvas'); wmCanvas.width = 1024; wmCanvas.height = 1024; const wmCtx = wmCanvas.getContext('2d'); const wmTex = new THREE.CanvasTexture(wmCanvas);
+        const wmPlane = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshBasicMaterial({ map: wmTex, transparent: true, opacity: 0.65, depthWrite: false, side: THREE.DoubleSide })); wmPlane.rotation.x = -Math.PI / 2; wmPlane.position.y = 2; scene.add(wmPlane);
+        const grid = new THREE.GridHelper(1000, 40, 0x0077b6, 0x0077b6); grid.material.opacity = 0.2; grid.material.transparent = true; scene.add(grid);
 
-        // --- Three.js 場景初始化 ---
-        const scene = new THREE.Scene(); 
-        scene.background = new THREE.Color('#001020'); 
-        scene.fog = new THREE.FogExp2('#001020', 0.003);
+        const taiwanPoly = [ [50,10], [58,16], [60,25], [57,40], [53,60], [48,90], [43,125], [40,145], [36,148], [32,140], [27,120], [22,95], [21,80], [24,55], [31,35], [41,18] ];
+        function isInsidePolygon(point, vs) { var x = point[0], y = point[1]; var inside = false; for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) { var xi = vs[i][0], yi = vs[i][1]; var xj = vs[j][0], yj = vs[j][1]; var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi); if (intersect) inside = !inside; } return inside; }
+        const twMapInfo = new Array(80*160);
+        for(let y=0; y<160; y++){ for(let x=0; x<80; x++){ let inside = isInsidePolygon([x, y], taiwanPoly); let elevation = 0; if(inside) { let x_ridge = 42 - (y - 80) * 0.12; let dx = x - x_ridge; let scale = (dx > 0) ? 8 : 18; let y_taper = Math.max(0, 1 - Math.pow(Math.abs(y - 80)/75, 2.5)); elevation = Math.max(0.05, 1 - Math.abs(dx)/scale) * y_taper; } twMapInfo[y*80+x] = { inside, elevation, dHx: 0, dHy: 0 }; } }
+        for(let y=1; y<159; y++){ for(let x=1; x<79; x++){ if(!twMapInfo[y*80+x].inside) continue; twMapInfo[y*80+x].dHx = twMapInfo[y*80+(x+1)].elevation - twMapInfo[y*80+(x-1)].elevation; twMapInfo[y*80+x].dHy = twMapInfo[(y+1)*80+x].elevation - twMapInfo[(y-1)*80+x].elevation; } }
+        const taiwanGroup = new THREE.Group(); const twGeo = new THREE.PlaneGeometry(80, 160, 79, 159); twGeo.rotateX(-Math.PI / 2);
+        const posTw = twGeo.attributes.position.array; const colorsTw = [];
+        for(let i=0; i<posTw.length; i+=3) { let map_x = Math.max(0, Math.min(79, Math.round(posTw[i] + 40))); let map_y = Math.max(0, Math.min(159, Math.round(posTw[i+2] + 80))); let info = twMapInfo[map_y * 80 + map_x]; if (info && info.inside) { let height = info.elevation * 45 + Math.random() * 2.5; posTw[i+1] = height; if(height > 25) colorsTw.push(0.35, 0.3, 0.25); else if(height > 10) colorsTw.push(0.2, 0.45, 0.2); else colorsTw.push(0.1, 0.55, 0.2); } else { posTw[i+1] = -5; colorsTw.push(0, 0, 0); } }
+        twGeo.setAttribute('color', new THREE.Float32BufferAttribute(colorsTw, 3)); twGeo.computeVertexNormals();
+        const taiwanMesh = new THREE.Mesh(twGeo, new THREE.MeshPhongMaterial({ vertexColors: true, flatShading: true })); taiwanGroup.add(taiwanMesh); taiwanGroup.position.set(300, 0, 0); taiwanGroup.visible = false; scene.add(taiwanGroup);
+        const warmCore = new THREE.Mesh(new THREE.SphereGeometry(18, 32, 32), new THREE.MeshBasicMaterial({ color: 0xff3300, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, clippingPlanes: [clipPlane] })); warmCore.position.y = 60; warmCore.scale.set(1, 2.5, 1); warmCore.visible = false; scene.add(warmCore);
+
+        const CLOUD_COUNT = 7000; const MOISTURE_COUNT = 2500; const RAIN_COUNT = 2000; const AIR_COUNT = 4000;
+        function createCloudTexture() { const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32); gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.9)'); gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.4)'); gradient.addColorStop(1, 'rgba(255, 255, 255, 0)'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(canvas); }
+        const cloudTexture = createCloudTexture();
+        function createParticleSystem(count, color, size, isCloud=false, useTexture=false, blending=THREE.AdditiveBlending, opacity=0.7) { const geo = new THREE.BufferGeometry(); const pos = new Float32Array(count * 3); const extra = new Float32Array(count * 3); for(let i=0; i<count; i++) { const r = Math.random() * 160 + 10; let a = Math.random() * Math.PI * 2; if(isCloud) { const arm = Math.floor(Math.random() * 4); a = arm * (Math.PI / 2) + (Math.random() * 0.4 - 0.2); } const h = Math.random() * 110; pos[i*3] = Math.cos(a) * r; pos[i*3+1] = h; pos[i*3+2] = Math.sin(a) * r; extra[i*3] = a; extra[i*3+1] = r; extra[i*3+2] = h; } geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('extra', new THREE.BufferAttribute(extra, 3)); const matOptions = { color: color, size: size, transparent: true, opacity: opacity, blending: blending, clippingPlanes: [clipPlane], depthWrite: !useTexture }; if(useTexture) matOptions.map = cloudTexture; return new THREE.Points(geo, new THREE.PointsMaterial(matOptions)); }
         
-        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 1000); 
-        camera.position.set(0, 70, 180);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true }); 
-        renderer.setPixelRatio(window.devicePixelRatio); 
-        renderer.setSize(window.innerWidth, window.innerHeight); 
-        document.body.appendChild(renderer.domElement);
-        
-        const controls = new THREE.OrbitControls(camera, renderer.domElement); 
-        controls.enableDamping = true;
-        controls.maxPolarAngle = Math.PI / 2 + 0.1;
+        let clouds = createParticleSystem(CLOUD_COUNT, 0xffffff, 14.0, true, true, THREE.NormalBlending, 0.45); 
+        let moisture = createParticleSystem(MOISTURE_COUNT, 0x00ffff, 10.0, false, true, THREE.AdditiveBlending, 0.4); 
+        let rain = createParticleSystem(RAIN_COUNT, 0x2a60ff, 3.0, false, false, THREE.NormalBlending, 0.9); 
+        let airMolecules = createParticleSystem(AIR_COUNT, 0xffffff, 2.5, false, false, THREE.NormalBlending, 0.6); 
+        scene.add(clouds); scene.add(moisture); scene.add(rain); scene.add(airMolecules);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(50, 100, 50); scene.add(dirLight);
-
-        // --- 建立地形 ---
-        function createLandmass(xPos, width, colorHex) {
-            const geo = new THREE.BoxGeometry(width, 20, 60);
-            const mat = new THREE.MeshPhongMaterial({ color: colorHex, flatShading: true });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(xPos, 5, 0);
-            scene.add(mesh);
+        const arrowGroup = new THREE.Group(); const arrowsData = [];
+        function createCurvedArrowMesh(type, angle, radius, colorHex) {
+            const lineGeo = new THREE.BufferGeometry(); const pts = new Float32Array(15 * 3); lineGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+            const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: colorHex, linewidth: 2 }));
+            let cRadius = type === 'up' ? 2 : 3; let cHeight = type === 'up' ? 6 : 8;
+            const coneGeo = new THREE.ConeGeometry(cRadius, cHeight, 8); coneGeo.translate(0, -cHeight / 2, 0);
+            const cone = new THREE.Mesh(coneGeo, new THREE.MeshBasicMaterial({ color: colorHex }));
+            const group = new THREE.Group(); group.add(line); group.add(cone);
+            return { type, angle, baseRadius: radius, group, lineGeo, cone };
         }
-        createLandmass(-110, 20, 0x3d5a80); 
-        createLandmass(110, 20, 0x8f7a66);
-
-        // 標籤座標追蹤
-        const labelWest = document.getElementById('label-west');
-        const labelEast = document.getElementById('label-east');
-        function updateLabels() {
-            const vectorW = new THREE.Vector3(-110, 25, 0).project(camera);
-            labelWest.style.left = (vectorW.x * .5 + .5) * window.innerWidth + 'px';
-            labelWest.style.top = (-(vectorW.y * .5) + .5) * window.innerHeight + 'px';
-            
-            const vectorE = new THREE.Vector3(110, 25, 0).project(camera);
-            labelEast.style.left = (vectorE.x * .5 + .5) * window.innerWidth + 'px';
-            labelEast.style.top = (-(vectorE.y * .5) + .5) * window.innerHeight + 'px';
-        }
-
-        // --- 海洋系統 ---
-        const OCEAN_WIDTH = 200;
-        const OCEAN_DEPTH = 60;
-        
-        const sstCanvas = document.createElement('canvas');
-        sstCanvas.width = 512; sstCanvas.height = 2;
-        const sstCtx = sstCanvas.getContext('2d');
-        const sstTexture = new THREE.CanvasTexture(sstCanvas);
-        
-        const oceanSurface = new THREE.Mesh(
-            new THREE.PlaneGeometry(OCEAN_WIDTH, OCEAN_DEPTH, 1, 1),
-            new THREE.MeshBasicMaterial({ map: sstTexture, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
-        );
-        oceanSurface.rotation.x = -Math.PI / 2;
-        scene.add(oceanSurface);
-
-        const thermocline = new THREE.Mesh(
-            new THREE.PlaneGeometry(OCEAN_WIDTH, OCEAN_DEPTH, 50, 10),
-            new THREE.MeshBasicMaterial({ color: 0x48cae4, wireframe: true, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
-        );
-        thermocline.rotation.x = -Math.PI / 2;
-        scene.add(thermocline);
-
-        const deepOcean = new THREE.Mesh(
-            new THREE.BoxGeometry(OCEAN_WIDTH, 40, OCEAN_DEPTH),
-            new THREE.MeshBasicMaterial({ color: 0x001d3d, transparent: true, opacity: 0.6 })
-        );
-        deepOcean.position.y = -20;
-        scene.add(deepOcean);
-
-        function updateOceanVisuals(oni) {
-            sstCtx.clearRect(0, 0, 512, 2);
-            const grd = sstCtx.createLinearGradient(0, 0, 512, 0);
-            let warmPoolEdge = Math.max(0.1, Math.min(0.9, 0.5 + (oni / 6)));
-            grd.addColorStop(0, '#ff0000'); 
-            grd.addColorStop(Math.max(0, warmPoolEdge - 0.2), '#ff6600');
-            grd.addColorStop(warmPoolEdge, '#ffff00');
-            grd.addColorStop(Math.min(1, warmPoolEdge + 0.2), '#00ccff');
-            grd.addColorStop(1, '#0044ff'); 
-            sstCtx.fillStyle = grd;
-            sstCtx.fillRect(0, 0, 512, 2);
-            sstTexture.needsUpdate = true;
-
-            const positions = thermocline.geometry.attributes.position.array;
-            for (let i = 0; i < positions.length; i += 3) {
-                let normalizedX = (positions[i] + 100) / 200; 
-                let depth = -25 + 20 * Math.tanh(2 * normalizedX + (oni*0.5));
-                positions[i+2] = -Math.abs(depth); 
+        const createArrows = () => {
+            while(arrowGroup.children.length > 0) arrowGroup.remove(arrowGroup.children[0]); arrowsData.length = 0; const lowRadii = [90, 55, 25];
+            for(let i=0; i<8; i++) {
+                const a = (i/8) * Math.PI * 2;
+                lowRadii.forEach(r => { let obj = createCurvedArrowMesh('low', a, r, 0xff3333); arrowGroup.add(obj.group); arrowsData.push(obj); });
+                let upObj = createCurvedArrowMesh('up', a, 20, 0xffca3a); arrowGroup.add(upObj.group); arrowsData.push(upObj);
+                let highObj = createCurvedArrowMesh('high', a, 35, 0x48cae4); arrowGroup.add(highObj.group); arrowsData.push(highObj);
             }
-            thermocline.geometry.attributes.position.needsUpdate = true;
+        }; createArrows(); scene.add(arrowGroup);
+
+        const rainCanvas = document.getElementById('rain-canvas'); const rctx = rainCanvas.getContext('2d'); let rainDataArray = new Float32Array(80 * 160);
+        function resetRainMap() { rainDataArray.fill(0); drawRainMap(); }
+        function drawRainMap() {
+            const imgData = rctx.createImageData(80, 160);
+            for(let y=0; y<160; y++) { for(let x=0; x<80; x++) { let idx = (y * 80 + x) * 4; let info = twMapInfo[y * 80 + x]; if(info && info.inside) { let rainAmt = rainDataArray[y * 80 + x]; let r=45, g=106, b=79; if(rainAmt > 350) { r=128; g=0; b=128; } else if(rainAmt > 200) { r=255; g=0; b=0; } else if(rainAmt > 130) { r=255; g=165; b=0; } else if(rainAmt > 50) { r=255; g=255; b=0; } else if(rainAmt > 10) { r=0; g=255; b=0; } else if(rainAmt > 1) { r=0; g=150; b=255; } imgData.data[idx] = r; imgData.data[idx+1] = g; imgData.data[idx+2] = b; imgData.data[idx+3] = 255; } else { imgData.data[idx+3] = 0; } } }
+            rctx.putImageData(imgData, 0, 0);
         }
 
-        // --- 粒子與雲系系統 ---
-        const AIR_COUNT = 1500;
-        const RAIN_COUNT = 800;
-
-        // 沃克環流 (大氣粒子)
-        const airGeo = new THREE.BufferGeometry();
-        const airPos = new Float32Array(AIR_COUNT * 3);
-        const airExtra = new Float32Array(AIR_COUNT * 3); // [角度, 半徑偏移, Z軸偏移]
-        for(let i=0; i<AIR_COUNT; i++) {
-            airExtra[i*3] = Math.random() * Math.PI * 2;
-            airExtra[i*3+1] = (Math.random() - 0.5) * 15;
-            airExtra[i*3+2] = (Math.random() - 0.5) * 30;
-        }
-        airGeo.setAttribute('position', new THREE.BufferAttribute(airPos, 3));
-        airGeo.setAttribute('extra', new THREE.BufferAttribute(airExtra, 3));
-        const airParticles = new THREE.Points(airGeo, new THREE.PointsMaterial({ color: 0xade8f4, size: 2.0, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }));
-        scene.add(airParticles);
-
-        // 實體 3D 雲群組
-        const cloudGroup = new THREE.Group();
-        const cloudGeo = new THREE.SphereGeometry(6, 16, 16);
-        const cloudMat = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, transparent: true, opacity: 0.95 });
-        for(let i=0; i<8; i++) {
-            const mesh = new THREE.Mesh(cloudGeo, cloudMat);
-            mesh.position.set((Math.random()-0.5)*25, Math.random()*12, (Math.random()-0.5)*15);
-            mesh.scale.set(1 + Math.random(), 0.6 + Math.random()*0.4, 1 + Math.random());
-            cloudGroup.add(mesh);
-        }
-        cloudGroup.position.y = 20;
-        scene.add(cloudGroup);
-
-        // 降雨系統
-        const rainGeo = new THREE.BufferGeometry();
-        const rainPos = new Float32Array(RAIN_COUNT * 3);
-        for(let i=0; i<RAIN_COUNT; i++) {
-            rainPos[i*3] = (Math.random() - 0.5) * 30;
-            rainPos[i*3+1] = Math.random() * 20;
-            rainPos[i*3+2] = (Math.random() - 0.5) * 20;
-        }
-        rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
-        const rainParticles = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: 0x00aaff, size: 2.0, transparent: true, opacity: 0.8, blending: THREE.NormalBlending, depthWrite: false }));
-        cloudGroup.add(rainParticles);
-
-        // --- ★ 核心修正：將沃克環流分裂為東、西兩個氣室 ---
-        function updateAtmosphere(oni) {
-            let convectionX = Math.max(-95, Math.min(60, -60 + (oni * 25)));
-
-            if(params.showAir) {
-                let wPos = airParticles.geometry.attributes.position.array;
-                let wExtra = airParticles.geometry.attributes.extra.array;
-                
-                // 動態計算東側與西側的兩個獨立環流圈
-                // 東側環流 (正常沃克環流主體)
-                let loopEastCx = (convectionX + 85) / 2;
-                let loopEastRx = Math.abs(85 - convectionX) / 2 + 5;
-                
-                // 西側環流 (聖嬰現象時出現的異常下沉環流)
-                let loopWestCx = (-95 + convectionX) / 2;
-                let loopWestRx = Math.abs(convectionX - (-95)) / 2 + 5;
-
-                let loopRy = 22;
-                
-                // ENSO 狀態改變兩側風速 (動態視覺強弱)
-                let eastSpeed = Math.max(0.005, 0.02 - (oni * 0.005));
-                let westSpeed = Math.max(0.005, 0.02 + (oni * 0.005));
-
-                for(let i=0; i<AIR_COUNT; i++) {
-                    let isEastCell = (i < AIR_COUNT / 2);
-
-                    if (isEastCell) {
-                        // 東側環流：逆時針(表面吹東風向西)
-                        wExtra[i*3] -= eastSpeed; 
-                        let angle = wExtra[i*3];
-                        let rOff = wExtra[i*3+1];
-                        let zOff = wExtra[i*3+2];
-
-                        wPos[i*3] = loopEastCx + Math.cos(angle) * (loopEastRx + rOff);
-                        wPos[i*3+1] = 25 + Math.sin(angle) * (loopRy + rOff);
-                        wPos[i*3+2] = zOff;
-                    } else {
-                        // 西側環流：順時針(表面異常吹西風向東)
-                        wExtra[i*3] += westSpeed; 
-                        let angle = wExtra[i*3];
-                        let rOff = wExtra[i*3+1];
-                        let zOff = wExtra[i*3+2];
-
-                        wPos[i*3] = loopWestCx + Math.cos(angle) * (loopWestRx + rOff);
-                        wPos[i*3+1] = 25 + Math.sin(angle) * (loopRy + rOff);
-                        wPos[i*3+2] = zOff;
-                    }
-                }
-                airParticles.geometry.attributes.position.needsUpdate = true;
-                airParticles.visible = true;
-            } else { airParticles.visible = false; }
-
-            // 雲層追蹤與降雨動畫
-            if(params.showCloudsRain) {
-                cloudGroup.position.x += (convectionX - cloudGroup.position.x) * 0.1;
-                cloudGroup.position.y = 20 + Math.sin(frameCount * 0.05) * 1.5;
-
-                let rPos = rainParticles.geometry.attributes.position.array;
-                for(let i=0; i<RAIN_COUNT; i++) {
-                    rPos[i*3+1] -= 1.0; 
-                    if (rPos[i*3+1] < -20) { 
-                        rPos[i*3] = (Math.random() - 0.5) * 35;
-                        rPos[i*3+1] = 5 + Math.random() * 10;
-                        rPos[i*3+2] = (Math.random() - 0.5) * 20;
-                    }
-                }
-                rainParticles.geometry.attributes.position.needsUpdate = true;
-                cloudGroup.visible = true;
-            } else { cloudGroup.visible = false; }
-            
-            thermocline.visible = params.showThermocline;
-        }
-
-        // --- Chart.js 時序圖設定 ---
-        const ctxChart = document.getElementById('ensoChart').getContext('2d');
-        const ensoChart = new Chart(ctxChart, { 
+        const ctx = document.getElementById('typhoonChart').getContext('2d');
+        const typhoonChart = new Chart(ctx, { 
             type: 'line', 
-            data: { labels: [], datasets: [ { label: 'ONI 指數 (°C)', data: [], borderColor: '#ffca3a', backgroundColor: 'rgba(255,202,58,0.2)', fill: true, tension: 0.3 } ] }, 
+            data: { 
+                labels: [], 
+                datasets: [ 
+                    { label: '風速(m/s)', data: [], borderColor: '#ff3333', backgroundColor: 'transparent', yAxisID: 'y', tension: 0.2 }, 
+                    { label: '氣壓(hPa)', data: [], borderColor: '#48cae4', backgroundColor: 'transparent', yAxisID: 'y1', tension: 0.2 },
+                    { label: '距台(km)', data: [], borderColor: '#e9c46a', backgroundColor: 'transparent', yAxisID: 'y2', borderDash: [5, 5], tension: 0.2 }
+                ] 
+            }, 
             options: { 
-                responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
-                plugins: { legend: { display: true, labels: { font: { size: 10 } } } }, 
+                responsive: true, maintainAspectRatio: false, animation: { duration: 200 }, 
+                plugins: { legend: { labels: { font: { size: 10 } } } }, 
                 scales: { 
-                    x: { display: true, ticks: { maxTicksLimit: 10, font: {size: 9} } }, 
-                    y: { type: 'linear', display: true, min: -4, max: 4, grid: { color: (ctx) => ctx.tick.value === 0 ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.1)', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } } 
+                    x: { display: true, ticks: { maxTicksLimit: 12, font: {size: 9} } }, 
+                    y: { type: 'linear', display: true, position: 'left', min: 0, max: 80, title: {display:false} }, 
+                    y1: { type: 'linear', display: true, position: 'right', min: 900, max: 1020, grid: { drawOnChartArea: false } },
+                    y2: { type: 'linear', display: false, position: 'right', min: 0, max: 500 } 
                 } 
             } 
         });
 
-        // --- GUI 控制面板設定 ---
-        const gui = new dat.GUI({ width: 320 });
-        const f1 = gui.addFolder('1. 聖嬰現象情境切換');
-        f1.add(params, 'setLaNina').name('❄️ 觸發：反聖嬰現象 (La Niña)');
-        f1.add(params, 'setNormal').name('🌊 觸發：正常狀態 (Normal)');
-        f1.add(params, 'setElNino').name('🔥 觸發：聖嬰現象 (El Niño)');
-        f1.add(params, 'targetONI', -3, 3).name('手動調整 ONI 指數').listen();
-        
-        const f2 = gui.addFolder('2. 視覺化圖層開關');
-        f2.add(params, 'showThermocline').name('顯示海底斜溫層');
-        f2.add(params, 'showAir').name('顯示沃克環流 (3D風帶)');
-        f2.add(params, 'showCloudsRain').name('顯示實體雲層與降雨');
+        // ==========================================
+        // 修正點: 將路徑 8 修改為包含中繼點 (mid) 的貝茲曲線轉向
+        // ==========================================
+        const steeringConfigs = {
+            '-- 自訂 / 原地發展 (手動調整緯度) --': { s: [0, 0], e: [0, 0], hX: 512, hZ: 512, lat: null },
+            '路徑 1 (通過北部海面 - 高壓略退)': { s: [-200, 100], e: [200, 100], hX: 300, hZ: -20, lat: 25 },
+            '路徑 2 (北部登陸 - 高壓正常)': { s: [-200, 45], e: [200, 45], hX: 250, hZ: -50, lat: 24 },
+            '路徑 3 (中南部登陸 - 高壓正常)': { s: [-200, 0], e: [200, 0], hX: 180, hZ: -120, lat: 23 },
+            '路徑 4 (南部登陸 - 高壓偏強)': { s: [-200, -45], e: [200, -45], hX: 100, hZ: -150, lat: 22 },
+            '路徑 5 (通過南部海面 - 高壓西伸)': { s: [-200, -100], e: [200, -100], hX: 0, hZ: -200, lat: 19 },
+            '路徑 6 (東岸北上 - 高壓東退)': { s: [-35, -200], e: [-35, 200], hX: 450, hZ: -50, lat: 20 },
+            '路徑 7 (西岸北上 - 高壓東退且偏南)': { s: [35, -200], e: [35, 200], hX: 500, hZ: 100, lat: 20 },
+            // 路徑 8 修正: 從東南來，抵達西南沿海 (V型底)，向東北遠離 (貝茲控制點 mid 用於製造拋物線)
+            '路徑 8 (南部海面轉西南沿海北上)': { s: [-150, -150], mid: [230, -80], e: [-150, 150], hX: 400, hZ: 250, lat: 21 },
+            // 路徑 9 修正: 確實從西南方南海生成，沿著西海岸 (X=100) 穩定向北移動
+            '路徑 9 (南海生成沿西海岸北上)': { s: [100, -200], e: [100, 200], hX: -100, hZ: -250, lat: 20 }
+        };
 
-        const f3 = gui.addFolder('3. 系統與時間控制');
-        f3.add(params, 'isPaused').name('⏸️ 暫停模擬動畫');
-        f3.add(params, 'autoRecord').name('📝 啟用實時觀測紀錄');
-        
-        f1.open(); f2.open(); f3.open();
+        const params = {
+            hemisphere: '北半球', latitude: 15, sst: 28.0, windShear: 5, autoRecord: true,
+            showAir: true, showAirMolecules: false, showMoisture: true, show3DRain: true, showWeatherMap: true, showVectors: true, showCrossSection: false,
+            isPaused: false, steeringHigh: '-- 自訂 / 原地發展 (手動調整緯度) --', moveSpeed: 0.0015, isSimulating: false, simProgress: 0,
+            playTrack: function() { 
+                if(this.steeringHigh.startsWith('--')) { alert('請先選擇侵台路徑以開始移動模擬！'); return; }
+                this.isSimulating = true; this.simProgress = 0; this.isPaused = false; 
+                taiwanGroup.visible = true; systemEvolution = 500; lastRecordedProgPct = -1;
+                resetRainMap(); typhoonChart.data.labels = []; typhoonChart.data.datasets.forEach(ds => ds.data = []); typhoonChart.update();
+                document.getElementById('log-table').getElementsByTagName('tbody')[0].innerHTML = ''; 
+                updateGUILock();
+                gui.updateDisplay(); 
+            },
+            recordData: function(xLabel) {
+                let labelStr = (typeof xLabel === 'string') ? xLabel : (Math.round(params.simProgress*100) + '%');
+                let p = Math.round(1008 - (systemEvolution / 1000) * 88); let w = Math.round(12 + (systemEvolution / 1000) * 45);
+                let distVal = "-"; let isHitting = false;
+                if(taiwanGroup.visible) { let dist = Math.round(Math.sqrt(taiwanGroup.position.x**2 + taiwanGroup.position.z**2)); distVal = dist; if(dist < 60) isHitting = true; }
+                let status = isHitting ? '🔴 觸陸' : '🔵 海面'; if(systemEvolution < 50) status = '❌ 消散';
+                let logTable = document.getElementById('log-table').getElementsByTagName('tbody')[0];
+                let row = logTable.insertRow(0);
+                row.innerHTML = `<td>${labelStr}</td><td>${params.latitude}</td><td>${p}</td><td>${w}</td><td>${distVal}</td><td>${status}</td>`;
+                document.getElementById('data-log-panel').style.display = 'block';
+                typhoonChart.data.labels.push(labelStr); typhoonChart.data.datasets[0].data.push(w); typhoonChart.data.datasets[1].data.push(p); typhoonChart.data.datasets[2].data.push(distVal !== "-" ? distVal : 0);
+                typhoonChart.update();
+            },
+            reset: function() {
+                systemEvolution = 0; taiwanGroup.visible = false; params.isSimulating = false; params.isPaused = false; frameCount = 0; lastRecordedProgPct = -1;
+                typhoonChart.data.labels = []; typhoonChart.data.datasets.forEach(ds => ds.data = []); typhoonChart.update();
+                resetRainMap(); document.getElementById('log-table').getElementsByTagName('tbody')[0].innerHTML = ''; document.getElementById('data-log-panel').style.display = 'none'; 
+                updateGUILock(); 
+                gui.updateDisplay();
+            }
+        };
+
+        const gui = new dat.GUI({ width: 340 });
+        const f1 = gui.addFolder('1. 初始參數與引導氣流');
+        const routeCtrl = f1.add(params, 'steeringHigh', Object.keys(steeringConfigs)).name('選擇侵台路徑'); 
+        const latCtrl = f1.add(params, 'latitude', 5, 30).name('觀測緯度 (科氏力)'); 
+        const sstCtrl = f1.add(params, 'sst', 20, 32).name('海表溫 (°C)'); 
+        const shearCtrl = f1.add(params, 'windShear', 0, 30).name('垂直風切 (m/s)');
+
+        function updateGUILock() {
+            const isRouteMode = !params.steeringHigh.startsWith('--');
+            const isSimulating = params.isSimulating;
+            latCtrl.domElement.closest('.cr').classList.toggle('disabled', isRouteMode || isSimulating);
+            [routeCtrl, sstCtrl, shearCtrl].forEach(c => { c.domElement.closest('.cr').classList.toggle('disabled', isSimulating); });
+        }
+
+        routeCtrl.onChange(val => {
+            const config = steeringConfigs[val];
+            if (config.lat !== null) params.latitude = config.lat;
+            updateGUILock(); gui.updateDisplay();
+        });
+
+        const f2 = gui.addFolder('2. 侵台模擬與科學紀錄');
+        f2.add(params, 'autoRecord').name('⏱️ 自動繪圖與紀錄'); f2.add(params, 'moveSpeed', 0.0005, 0.005).name('移速控制 (慢->快)'); f2.add(params, 'playTrack').name('▶️ 啟動路徑模擬'); f2.add(params, 'recordData').name('📝 手動單次擷取');
+        const f3 = gui.addFolder('3. 天氣圖與視覺觀測');
+        f3.add(params, 'showWeatherMap').name('🗺️ 顯示地面天氣圖疊影'); f3.add(params, 'showCrossSection').name('🔪 開啟垂直剖面'); f3.add(params, 'showAir').name('顯示 3D 雲帶 (白色)'); f3.add(params, 'showAirMolecules').name('顯示空氣分子流場 (小點)'); f3.add(params, 'showMoisture').name('顯示海面水氣 (青白色)'); f3.add(params, 'show3DRain').name('顯示 3D 降雨與雨量圖'); f3.add(params, 'showVectors').name('顯示螺旋風場 (紅/黃/藍)'); f3.add(params, 'isPaused').name('⏸️ 暫停所有模擬'); f3.add(params, 'reset').name('♻️ 重置系統');
+        f1.open(); f2.open(); f3.open(); 
+
+        const statusText = document.getElementById('status-text'); const statusCont = document.getElementById('status-container'); const stageBadge = document.getElementById('stage-badge');
+        resetRainMap(); 
 
         window.exportCSV = function() {
             let table = document.getElementById("log-table"); let rows = table.querySelectorAll("tr"); let csv = [];
             for (let i = 0; i < rows.length; i++) { let row = [], cols = rows[i].querySelectorAll("td, th"); for (let j = 0; j < cols.length; j++) row.push(cols[j].innerText); csv.push(row.join(",")); }
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csv.join("\n"); let encodedUri = encodeURI(csvContent); let link = document.createElement("a");
-            link.setAttribute("href", encodedUri); link.setAttribute("download", "ENSO_Simulation_Data.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            link.setAttribute("href", encodedUri); link.setAttribute("download", "typhoon_timeseries_data.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
 
-        function updateUIandLog() {
-            const oni = params.currentONI;
-            const sstAnomaly = oni * 0.8; 
-            
-            let stageClass = "normal-stage", stageName = "正常年 (Normal)", windDesc = "強勁偏東風 (東南信風)", weatherDesc = "西側多雨、東側湧升流豐富";
-            if (oni > 0.5) { stageClass = "elnino-stage"; stageName = "聖嬰現象 (El Niño)"; windDesc = oni > 1.5 ? "異常偏西風爆發" : "信風極度減弱"; weatherDesc = "對流東移中太平洋，西側下沉乾旱"; } 
-            else if (oni < -0.5) { stageClass = "lanina-stage"; stageName = "反聖嬰現象 (La Niña)"; windDesc = "信風異常增強"; weatherDesc = "西側劇烈豪雨，東側極度寒冷乾燥"; }
-
-            // 處理暫停標籤
-            const pauseHTML = params.isPaused ? `<span class="paused-badge">暫停中</span>` : "";
-            document.getElementById('stage-badge').className = "stage-badge " + stageClass;
-            document.getElementById('stage-badge').innerHTML = stageName + pauseHTML;
-
-            document.getElementById('val-oni').innerText = oni.toFixed(2);
-            document.getElementById('val-sst').innerText = (sstAnomaly > 0 ? "+" : "") + sstAnomaly.toFixed(2);
-            document.getElementById('val-wind').innerText = windDesc;
-            document.getElementById('val-weather').innerText = weatherDesc;
-
-            // 實時紀錄 (受暫停與紀錄開關控制)
-            if (!params.isPaused && params.autoRecord && frameCount % 60 === 0) {
-                simMonth++;
-                let logTable = document.getElementById('log-table').getElementsByTagName('tbody')[0];
-                let row = logTable.insertRow(0);
-                if (logTable.rows.length > 30) logTable.deleteRow(30); 
-                
-                row.innerHTML = `<td>第 ${simMonth} 個月</td><td>${oni.toFixed(2)}</td><td>${sstAnomaly.toFixed(2)}</td><td>${windDesc.split(' ')[0]}</td><td>${stageName.split(' ')[0]}</td>`;
-                
-                ensoChart.data.labels.push('M' + simMonth);
-                ensoChart.data.datasets[0].data.push(oni.toFixed(2));
-                if (ensoChart.data.labels.length > 30) {
-                    ensoChart.data.labels.shift();
-                    ensoChart.data.datasets[0].data.shift();
-                }
-                ensoChart.update();
-            }
+        function drawTyphoonSymbol(ctx, x, y, size, isNorth) {
+            ctx.save(); ctx.translate(x, y); if (!isNorth) ctx.scale(-1, 1); 
+            ctx.fillStyle = '#ff3333'; ctx.beginPath(); ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2); ctx.fill();
+            ctx.lineWidth = size * 0.18; ctx.strokeStyle = '#ff3333'; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(0, -size * 0.3); ctx.bezierCurveTo(size * 0.8, -size * 0.3, size * 0.9, size * 0.3, size * 0.3, size * 0.7); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, size * 0.3); ctx.bezierCurveTo(-size * 0.8, size * 0.3, -size * 0.9, -size * 0.3, -size * 0.3, -size * 0.7); ctx.stroke();
+            ctx.restore();
         }
 
-        // --- 主渲染迴圈 ---
+        function updateWeatherMap(pressure, isOk) {
+            wmCtx.clearRect(0, 0, 1024, 1024); if (!params.showWeatherMap) { wmTex.needsUpdate = true; return; }
+            wmCtx.lineWidth = 2; let numCircles = Math.floor((1012 - pressure) / 4);
+            for(let i=0; i<=numCircles; i++) {
+                wmCtx.beginPath(); let r = (i === 0) ? 20 : 20 + i * 25 + (systemEvolution/200)*10;
+                wmCtx.arc(512, 512, r, 0, 2 * Math.PI); wmCtx.strokeStyle = (i%5===0) ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)'; wmCtx.stroke();
+                if(i%2===0 && r > 30) { wmCtx.fillStyle = 'white'; wmCtx.font = "14px Arial"; wmCtx.fillText(Math.round(pressure + i*4), 512 + r - 10, 512 - 5); }
+            }
+            if (systemEvolution > 100 && isOk) { drawTyphoonSymbol(wmCtx, 512, 512, 22, params.hemisphere === '北半球'); } 
+            else { wmCtx.fillStyle = '#ff3333'; wmCtx.font = "bold 32px Arial"; wmCtx.textAlign = "center"; wmCtx.textBaseline = "middle"; wmCtx.fillText("T.D.", 512, 512); }
+            let config = steeringConfigs[params.steeringHigh]; let hCanvasX = 512 + (config.hX / 1000) * 1024; let hCanvasZ = 512 + (config.hZ / 1000) * 1024;
+            if(!params.steeringHigh.startsWith('--')){
+                wmCtx.beginPath(); wmCtx.arc(hCanvasX, hCanvasZ, 200, 0, 2 * Math.PI); wmCtx.strokeStyle = 'rgba(255,100,100,0.6)'; wmCtx.lineWidth = 4; wmCtx.stroke();
+                wmCtx.fillStyle = 'rgba(255,100,100,0.9)'; wmCtx.font = "bold 48px Arial"; wmCtx.fillText("H", hCanvasX, hCanvasZ);
+            } wmTex.needsUpdate = true;
+        }
+
         function animate() {
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animate); frameCount++;
+            const isNorth = params.hemisphere === '北半球'; let currentWindShear = params.windShear; let terrainPenalty = 0; let isHittingTerrain = false;
+
+            if (params.isSimulating && !params.isPaused) {
+                params.simProgress += params.moveSpeed; if (params.simProgress >= 1) params.isSimulating = false;
+                const track = steeringConfigs[params.steeringHigh]; 
+                
+                // ==========================================
+                // 修正點: 加入貝茲曲線的位移計算，讓路徑可以非線性轉向
+                // ==========================================
+                if (track.mid) {
+                    let t = params.simProgress; let invT = 1 - t;
+                    taiwanGroup.position.x = invT * invT * track.s[0] + 2 * invT * t * track.mid[0] + t * t * track.e[0];
+                    taiwanGroup.position.z = invT * invT * track.s[1] + 2 * invT * t * track.mid[1] + t * t * track.e[1];
+                } else {
+                    taiwanGroup.position.x = track.s[0] + (track.e[0] - track.s[0]) * params.simProgress; 
+                    taiwanGroup.position.z = track.s[1] + (track.e[1] - track.s[1]) * params.simProgress;
+                }
+
+                let dx = -taiwanGroup.position.x; let dz = -taiwanGroup.position.z; let distToCenter = Math.sqrt(dx*dx + dz*dz);
+                if (distToCenter < 60) { isHittingTerrain = true; terrainPenalty = (60 - distToCenter) * 0.3; currentWindShear += (60 - distToCenter) * 0.4; }
+                
+                let cx = 40 - taiwanGroup.position.x; let cy = 80 - taiwanGroup.position.z; let rainIntensity = systemEvolution / 500; 
+                let inflowAngle = 20 * Math.PI / 180; let cosA = Math.cos(inflowAngle), sinA = Math.sin(inflowAngle);
+
+                for(let y=1; y<159; y++) {
+                    for(let x=1; x<79; x++) {
+                        let info = twMapInfo[y*80+x];
+                        if(info && info.inside) {
+                            let vx = x - cx; let vy = y - cy; let distToEye = Math.sqrt(vx*vx + vy*vy) || 1;
+                            let tanX = vy / distToEye; let tanY = -vx / distToEye; if(!isNorth) { tanX *= -1; tanY *= -1; }
+                            let windX = tanX * cosA - tanY * sinA; let windY = tanX * sinA + tanY * cosA;
+                            let topoDot = windX * info.dHx + windY * info.dHy; let topoFactor = 1.0;
+                            if (distToEye > 5) {
+                                if (topoDot > 0) topoFactor = 1.0 + topoDot * 80; 
+                                else topoFactor = Math.max(0.0, 1.0 + topoDot * 120); 
+                            }
+                            if (distToEye < 160) {
+                                let theta = Math.atan2(vy, vx);
+                                let spiralPhase = 3 * theta - 0.15 * distToEye + frameCount * 0.05;
+                                let bandPerturbation = Math.max(0.1, Math.cos(spiralPhase));
+                                let structuralFactor = (distToEye <= 15) ? (distToEye / 15) : (Math.pow(Math.max(0, 160 - distToEye) / 145, 1.5) * bandPerturbation);
+                                rainDataArray[y * 80 + x] += structuralFactor * 0.4 * rainIntensity * (0.0015 / params.moveSpeed) * topoFactor;
+                            }
+                        }
+                    }
+                } if(frameCount % 5 === 0) drawRainMap();
+            }
+
+            let isOk = true; let msg = ""; let coriolisEffect = Math.sin(params.latitude * Math.PI / 180) * 12; 
+            if(params.latitude < 5) { isOk = false; msg += "• 緯度過低，科氏力不足<br>"; }
+            if(params.sst < 26.5) { isOk = false; msg += "• 海溫過低，能量不足<br>"; }
+            if(currentWindShear > 15) { isOk = false; msg += isHittingTerrain ? "⚠️ 遭遇地形破壞<br>" : "• 風切過大<br>"; }
 
             if (!params.isPaused) {
-                frameCount++;
-                params.currentONI += (params.targetONI - params.currentONI) * params.transitionSpeed;
-                
-                updateOceanVisuals(params.currentONI);
-                updateAtmosphere(params.currentONI);
+                if (isOk) { let growth = ((params.sst - 26.5) * 1.5) + (coriolisEffect * 0.4) - (currentWindShear * 0.5) - terrainPenalty; if (growth < 0 && systemEvolution > 0) growth = -3.0; else if (growth < 0.5) growth = 0.5; systemEvolution += growth; }
+                else { systemEvolution -= 5.0; } systemEvolution = Math.max(0, Math.min(systemEvolution, 1000));
             }
-            
-            updateLabels();
-            updateUIandLog();
 
-            controls.update();
-            renderer.render(scene, camera);
+            let stageLevel = (systemEvolution > 750) ? 3 : (systemEvolution > 400) ? 2 : (systemEvolution > 100) ? 1 : 0;
+            let stageName = ["熱帶擾動", "輕度颱風", "中度颱風", "強烈颱風"][stageLevel];
+            stageBadge.className = "stage-badge stage-" + stageLevel; stageBadge.innerText = stageName;
+            const pauseBadge = params.isPaused ? "<span class='pause-badge'>暫停中</span>" : "";
+            statusText.innerHTML = `中心氣壓: ${Math.round(1008 - (systemEvolution/1000)*88)} hPa<br>${msg}${pauseBadge}`;
+            statusCont.className = "status-box " + (isHittingTerrain ? "terrain-hit" : isOk ? "forming" : "failing");
+
+            if (!params.isPaused && params.autoRecord) {
+                if (params.isSimulating) {
+                    let cp = Math.floor(params.simProgress * 100); if (cp % 2 === 0 && cp !== lastRecordedProgPct) { params.recordData(cp + '%'); lastRecordedProgPct = cp; }
+                } else if (frameCount % 60 === 0) { params.recordData(Math.floor(frameCount / 60) + 's'); }
+            }
+
+            wmPlane.visible = params.showWeatherMap; if(frameCount % 5 === 0) updateWeatherMap(1008 - (systemEvolution/1000)*88, isOk);
+            clouds.visible = params.showAir; airMolecules.visible = params.showAirMolecules; moisture.visible = params.showMoisture; rain.visible = params.show3DRain && (systemEvolution > 50); 
+            arrowGroup.visible = params.showVectors; document.getElementById('vector-legend').style.display = params.showVectors ? 'block' : 'none';
+            
+            if (params.showVectors) {
+                let validIntensity = 0.3 + (systemEvolution / 1000) * 1.5; if (!isOk) validIntensity *= 0.5; let dirRot = isNorth ? 1 : -1;
+                arrowsData.forEach(item => {
+                    let { type, angle, baseRadius, group, lineGeo, cone } = item;
+                    let points = lineGeo.attributes.position.array; let pPrev = new THREE.Vector3(); let pCurr = new THREE.Vector3();
+                    for(let i=0; i<15; i++) {
+                        let t = i / 14; let r, h;
+                        if (type === 'low') { r = Math.max(25, baseRadius - t * 25 * validIntensity); h = 5; }
+                        else if (type === 'up') { r = 22; h = 10 + t * 40 * validIntensity; }
+                        else { r = baseRadius + t * 40 * validIntensity; h = 110; }
+                        let theta = angle + t * (type==='high' ? -0.8 : 1.0) * validIntensity * dirRot;
+                        pCurr.set(Math.cos(theta) * r, h, Math.sin(theta) * r); points[i*3] = pCurr.x; points[i*3+1] = pCurr.y; points[i*3+2] = pCurr.z; if (i === 13) pPrev.copy(pCurr); 
+                    }
+                    lineGeo.attributes.position.needsUpdate = true; cone.position.copy(pCurr); let dir = new THREE.Vector3().subVectors(pCurr, pPrev).normalize(); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+                    group.visible = isOk;
+                });
+            }
+
+            if (!params.isPaused) {
+                const rotMult = systemEvolution > 750 ? 1.8 : systemEvolution > 400 ? 1.2 : 0.8;
+                updateParticles(clouds, CLOUD_COUNT, isOk, true, isNorth, 25, rotMult, currentWindShear); 
+                updateParticles(airMolecules, AIR_COUNT, isOk, false, isNorth, 25, rotMult, currentWindShear);
+                updateParticles(moisture, MOISTURE_COUNT, isOk, false, isNorth, 25, rotMult, currentWindShear); 
+                updateRainParticles(rain, RAIN_COUNT, isOk, isNorth, 25, currentWindShear);
+            } controls.update(); renderer.render(scene, camera);
         }
 
-        window.addEventListener('resize', () => { 
-            camera.aspect = window.innerWidth / window.innerHeight; 
-            camera.updateProjectionMatrix(); 
-            renderer.setSize(window.innerWidth, window.innerHeight); 
-        });
+        function updateParticles(system, count, isOk, isCloud, isNorth, eyeWallRad, rotMult, currentShear) {
+            const pos = system.geometry.attributes.position.array; const extra = system.geometry.attributes.extra.array; const baseRotSpeed = (params.latitude / 30) * 0.03 * rotMult; const baseRotDir = isNorth ? -1 : 1;
+            for(let i=0; i<count; i++) {
+                let a = extra[i*3]; let r = extra[i*3+1]; let h = extra[i*3+2];
+                if(isOk && systemEvolution > 0) {
+                    let curRot = (h > 100) ? -baseRotDir * 0.5 : baseRotDir; a += baseRotSpeed * (60 / Math.max(r, 10)) * curRot; 
+                    if(h < 120) h += (isCloud ? 0.2 : 0.5); if(r > eyeWallRad && h < 100) r -= 0.15; if(h >= 100) { r += 1.0; } 
+                } else { a += 0.01; r += 0.4; if(h > 10) h -= 0.2; }
+                pos[i*3] = Math.cos(a) * r + ((h / 120) * currentShear * 3); pos[i*3+1] = h; pos[i*3+2] = Math.sin(a) * r; extra[i*3] = a; extra[i*3+1] = r; extra[i*3+2] = h;
+                if(r > 400 || h < 0 || h > 150) { extra[i*3+1] = Math.random()*200+50; extra[i*3+2] = 0; }
+            } system.geometry.attributes.position.needsUpdate = true;
+        }
 
+        function updateRainParticles(system, count, isOk, isNorth, eyeWallRad, currentShear) {
+            const pos = system.geometry.attributes.position.array; const extra = system.geometry.attributes.extra.array;
+            for(let i=0; i<count; i++) {
+                let a = extra[i*3]; let r = extra[i*3+1]; let h = extra[i*3+2]; h -= 3.5; 
+                if(h < 0) { r = Math.random()*50 + eyeWallRad; h = Math.random()*30 + 50; a = Math.random()*Math.PI*2; }
+                pos[i*3] = Math.cos(a) * r + ((h / 120) * currentShear * 1.5); pos[i*3+1] = h; pos[i*3+2] = Math.sin(a) * r; extra[i*3] = a; extra[i*3+1] = r; extra[i*3+2] = h;
+            } system.geometry.attributes.position.needsUpdate = true;
+        }
+
+        updateGUILock(); 
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
     </script>
 </body>
