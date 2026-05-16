@@ -15,10 +15,10 @@
         #ui-panel { top: 15px; left: 15px; background: rgba(10, 20, 35, 0.85); border: 1px solid #2a3b5c; padding: 15px 20px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.8); max-width: 340px; color: white; backdrop-filter: blur(4px); }
         
         .stage-badge { display: inline-block; padding: 6px 12px; margin-bottom: 10px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; color: #fff; background: #6c757d; transition: all 0.5s; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .stage-1 { background: #457b9d; } /* 分子雲 */
-        .stage-2 { background: #9e2a2b; } /* 坍縮 */
-        .stage-3 { background: #e09f3e; color: #333; text-shadow: none; } /* 原行星盤 */
-        .stage-4 { background: #2a9d8f; } /* 行星系統 */
+        .stage-1 { background: #457b9d; } 
+        .stage-2 { background: #9e2a2b; } 
+        .stage-3 { background: #e09f3e; color: #333; text-shadow: none; } 
+        .stage-4 { background: #2a9d8f; } 
 
         .status-box { padding: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.1); border-left: 5px solid #ccc; transition: all 0.3s ease; }
         #status-text { font-size: 0.95rem; color: #e0e0e0; line-height: 1.6; }
@@ -31,33 +31,23 @@
         .data-label { color: #a8dadc; }
         .data-value { font-weight: bold; font-family: monospace; font-size: 1rem; }
 
-        /* Dat GUI Customization */
         .dg.main .close-button { background-color: #e76f51 !important; }
         .dg .cr.function .property-name { color: #2a9d8f; font-weight: bold; width: 100%; text-align: center; }
     </style>
-    <!-- 引入 Three.js 與工具 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
 </head>
 <body>
 
-    <!-- 狀態資訊面板 -->
     <div id="ui-panel" class="panel">
         <div class="drag-handle" id="ui-drag-handle"><h1 class="drag-title-text">太陽星雲演化模擬</h1></div>
         <div id="stage-badge" class="stage-badge stage-1">1. 分子雲階段</div>
-        <div class="status-box">
-            <div id="status-text">
-                正在初始化宇宙空間...
-            </div>
-        </div>
+        <div class="status-box"><div id="status-text">正在初始化宇宙空間...</div></div>
     </div>
 
-    <!-- 實時觀測數據面板 -->
     <div id="data-log-panel" class="panel">
-        <div class="log-title" id="log-drag-handle">
-            <span>⠿ 系統實時物理數據</span>
-        </div>
+        <div class="log-title" id="log-drag-handle"><span>⠿ 系統實時物理數據</span></div>
         <div class="data-row"><span class="data-label">演化進度:</span> <span class="data-value" id="val-progress">0%</span></div>
         <div class="data-row"><span class="data-label">中心溫度:</span> <span class="data-value" id="val-temp">-250 °C</span></div>
         <div class="data-row"><span class="data-label">系統角速度:</span> <span class="data-value" id="val-rpm">0.1 RPM</span></div>
@@ -65,9 +55,6 @@
     </div>
 
     <script>
-        // ==========================================
-        // 1. 拖曳面板功能設定
-        // ==========================================
         function makeDraggable(elmnt, handleId) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; const handle = document.getElementById(handleId);
             if (handle) { handle.onmousedown = dragMouseDown; handle.ontouchstart = dragTouchStart; }
@@ -82,14 +69,11 @@
         makeDraggable(document.getElementById("ui-panel"), "ui-drag-handle");
         makeDraggable(document.getElementById("data-log-panel"), "log-drag-handle");
 
-        // ==========================================
-        // 2. Three.js 場景初始化
-        // ==========================================
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000510, 0.0015);
+        scene.fog = new THREE.FogExp2(0x000510, 0.0012);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
-        camera.position.set(0, 150, 350);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2500);
+        camera.position.set(0, 180, 380);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -99,12 +83,11 @@
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.maxDistance = 800;
+        controls.maxDistance = 1000;
 
-        // 背景星空 (固定不動)
         const starGeo = new THREE.BufferGeometry();
-        const starPos = new Float32Array(2000 * 3);
-        for(let i=0; i<2000; i++) {
+        const starPos = new Float32Array(2500 * 3);
+        for(let i=0; i<2500; i++) {
             starPos[i*3] = (Math.random() - 0.5) * 2000;
             starPos[i*3+1] = (Math.random() - 0.5) * 2000;
             starPos[i*3+2] = (Math.random() - 0.5) * 2000;
@@ -113,36 +96,30 @@
         const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xaaaaaa, size: 1.5, transparent: true, opacity: 0.8}));
         scene.add(stars);
 
-        // ==========================================
-        // 3. 核心星體與粒子系統建構
-        // ==========================================
-        const PARTICLE_COUNT = 15000;
+        const PARTICLE_COUNT = 18000;
         
-        // 中心原恆星 (Protostar)
-        const sunGeo = new THREE.SphereGeometry(15, 32, 32);
+        // 將太陽稍微縮小，避免蓋住最內側行星
+        const sunGeo = new THREE.SphereGeometry(12, 32, 32);
         const sunMat = new THREE.MeshBasicMaterial({ color: 0xff3300, transparent: true, opacity: 0.0 });
         const sunMesh = new THREE.Mesh(sunGeo, sunMat);
         scene.add(sunMesh);
 
-        // 光暈效果
-        const glowGeo = new THREE.SphereGeometry(25, 32, 32);
+        const glowGeo = new THREE.SphereGeometry(20, 32, 32);
         const glowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending });
         const glowMesh = new THREE.Mesh(glowGeo, glowMat);
         scene.add(glowMesh);
 
-        // 星雲粒子系統 (Dust and Gas)
         const nebulaGeo = new THREE.BufferGeometry();
         const positions = new Float32Array(PARTICLE_COUNT * 3);
         const colors = new Float32Array(PARTICLE_COUNT * 3);
-        const particleBaseData = []; // 儲存粒子的初始參數 (角度, 距離, 高度, 軌道偏移)
+        const particleBaseData = [];
 
-        const frostLineRadius = 120; // 雪線半徑
+        const frostLineRadius = 105; // 設定在火星與木星之間
 
         for(let i=0; i<PARTICLE_COUNT; i++) {
-            // 初始分佈：巨大的球狀星雲
-            let radius = Math.random() * 250 + 10;
+            let radius = Math.random() * 320 + 10; // 擴大星雲初始半徑以容納海王星
             let theta = Math.random() * Math.PI * 2;
-            let phi = Math.acos(2 * Math.random() - 1); // 球面分佈
+            let phi = Math.acos(2 * Math.random() - 1); 
             
             let yBase = radius * Math.cos(phi);
             let rBase = radius * Math.sin(phi);
@@ -152,21 +129,19 @@
                 rBase: rBase,
                 yBase: yBase,
                 speedOffset: Math.random() * 0.5 + 0.5,
-                isIcy: rBase > frostLineRadius // 是否在雪線外
+                isIcy: rBase > frostLineRadius 
             });
 
             positions[i*3] = rBase * Math.cos(theta);
             positions[i*3+1] = yBase;
             positions[i*3+2] = rBase * Math.sin(theta);
 
-            // 初始顏色都是灰褐色 (塵埃)
             colors[i*3] = 0.6; colors[i*3+1] = 0.5; colors[i*3+2] = 0.5;
         }
 
         nebulaGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         nebulaGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        // 建立發光材質
         const canvas = document.createElement('canvas'); canvas.width = 16; canvas.height = 16;
         const ctx = canvas.getContext('2d');
         const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
@@ -183,41 +158,58 @@
         const nebulaSystem = new THREE.Points(nebulaGeo, nebulaMat);
         scene.add(nebulaSystem);
 
-        // 雪線指示環 (Frost Line)
         const ringGeo = new THREE.TorusGeometry(frostLineRadius, 0.5, 16, 100);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.0 });
         const frostRing = new THREE.Mesh(ringGeo, ringMat);
         frostRing.rotation.x = Math.PI / 2;
         scene.add(frostRing);
 
-        // 生成行星 (Stage 4)
-        const planetOrbits = [30, 60, 100, 160, 220]; // 類地行星與類木行星軌道
-        const planets = [];
-        const planetColors = [0x888888, 0xcca300, 0x3366ff, 0xcc9966, 0x6699ff];
-        const planetSizes = [2, 3, 4, 8, 7];
+        // ==========================================
+        // 修正重點：八大行星的真實比例配置 (類地與類木)
+        // ==========================================
+        const planetData = [
+            { name: "水星", dist: 28, size: 1.2, color: 0xaaaaaa, speed: 0.08 },
+            { name: "金星", dist: 42, size: 2.0, color: 0xffe6cc, speed: 0.05 },
+            { name: "地球", dist: 60, size: 2.2, color: 0x3366ff, speed: 0.035 },
+            { name: "火星", dist: 80, size: 1.5, color: 0xcc3300, speed: 0.025 },
+            { name: "木星", dist: 130, size: 7.0, color: 0xcc9966, speed: 0.012 },
+            { name: "土星", dist: 180, size: 6.0, color: 0xe6cc99, speed: 0.008, hasRing: true },
+            { name: "天王星", dist: 230, size: 4.0, color: 0x99ccff, speed: 0.005 },
+            { name: "海王星", dist: 270, size: 3.8, color: 0x3333ff, speed: 0.004 }
+        ];
 
-        planetOrbits.forEach((dist, idx) => {
-            const pGeo = new THREE.SphereGeometry(planetSizes[idx], 32, 32);
-            const pMat = new THREE.MeshPhongMaterial({ color: planetColors[idx], transparent: true, opacity: 0 });
+        const planets = [];
+        planetData.forEach((pd) => {
+            const pGeo = new THREE.SphereGeometry(pd.size, 32, 32);
+            const pMat = new THREE.MeshPhongMaterial({ color: pd.color, transparent: true, opacity: 0 });
             const pMesh = new THREE.Mesh(pGeo, pMat);
             const pivot = new THREE.Group();
-            pMesh.position.set(dist, 0, 0);
+            
+            pMesh.position.set(pd.dist, 0, 0);
+            
+            // 特別為土星加上行星環，增加視覺豐富度
+            let ringMesh = null;
+            if (pd.hasRing) {
+                const sRingGeo = new THREE.TorusGeometry(pd.size * 1.8, 0.6, 16, 64);
+                const sRingMat = new THREE.MeshPhongMaterial({ color: 0xe6cc99, transparent: true, opacity: 0 });
+                ringMesh = new THREE.Mesh(sRingGeo, sRingMat);
+                ringMesh.rotation.x = Math.PI / 2.2;
+                pMesh.add(ringMesh);
+            }
+
             pivot.add(pMesh);
             scene.add(pivot);
-            planets.push({ mesh: pMesh, pivot: pivot, dist: dist, speed: 20 / dist });
+            
+            planets.push({ mesh: pMesh, ring: ringMesh, pivot: pivot, dist: pd.dist, speed: pd.speed });
         });
 
-        // 打光 (針對行星)
-        const pointLight = new THREE.PointLight(0xffffff, 0, 500);
+        const pointLight = new THREE.PointLight(0xffffff, 0, 600);
         scene.add(pointLight);
         const ambientLight = new THREE.AmbientLight(0x222222);
         scene.add(ambientLight);
 
-        // ==========================================
-        // 4. GUI 與控制參數
-        // ==========================================
         const params = {
-            evolution: 0, // 0 到 100
+            evolution: 0, 
             autoPlay: false,
             speed: 0.1,
             showFrostLine: true,
@@ -235,9 +227,6 @@
         folder.add(params, 'reset').name('♻️ 重置星雲');
         folder.open();
 
-        // ==========================================
-        // 5. 動畫與演化邏輯 (核心物理機制視覺化)
-        // ==========================================
         let time = 0;
         const stageBadge = document.getElementById('stage-badge');
         const statusText = document.getElementById('status-text');
@@ -251,106 +240,88 @@
                 if (params.evolution > 100) params.evolution = 100;
             }
 
-            const p = params.evolution / 100; // 歸一化進度 0 ~ 1
+            const p = params.evolution / 100; 
 
-            // --- 狀態更新 ---
             let stageNum = 1;
             let desc = "";
             if (p < 0.25) {
-                stageNum = 1;
-                stageBadge.innerText = "1. 分子雲 (Molecular Cloud)";
+                stageNum = 1; stageBadge.innerText = "1. 分子雲 (Molecular Cloud)";
                 desc = "宇宙中充滿氣體與塵埃的巨大雲團，溫度極低，受到微弱擾動準備開始坍縮。";
             } else if (p < 0.5) {
-                stageNum = 2;
-                stageBadge.innerText = "2. 重力坍縮 (Gravitational Collapse)";
+                stageNum = 2; stageBadge.innerText = "2. 重力坍縮 (Gravitational Collapse)";
                 desc = "重力大於氣體壓力，物質向中心聚集。根據<span class='highlight'>角動量守恆</span>，整體自轉速度越來越快，結構逐漸扁平化。";
             } else if (p < 0.8) {
-                stageNum = 3;
-                stageBadge.innerText = "3. 原行星盤與雪線 (Protoplanetary Disk)";
+                stageNum = 3; stageBadge.innerText = "3. 原行星盤與雪線 (Protoplanetary Disk)";
                 desc = "形成扁平圓盤，中心點燃原恆星。盤面出現<span class='highlight'>雪線 (Frost Line)</span>：線內高溫僅岩石金屬凝結，線外低溫讓水和甲烷結冰。";
             } else {
-                stageNum = 4;
-                stageBadge.innerText = "4. 行星吸積與軌道清除 (Accretion)";
-                desc = "微星互相碰撞合併形成行星，大行星的重力像吸塵器般清空軌道上的殘骸，形成太陽系雛形。";
+                stageNum = 4; stageBadge.innerText = "4. 行星吸積與軌道清除 (Accretion)";
+                desc = "微星互相碰撞合併形成<span class='highlight'>八大行星</span>，剩餘塵埃被太陽風吹散，展現出內側岩石行星與外側氣體巨行星的分佈。";
             }
             stageBadge.className = "stage-badge stage-" + stageNum;
             statusText.innerHTML = desc;
 
-            // --- 物理數據面板更新 ---
             document.getElementById('val-progress').innerText = params.evolution.toFixed(1) + '%';
             document.getElementById('val-temp').innerText = Math.floor(-250 + (p * 5800)) + ' °C';
             let currentRPM = (0.1 + (p * p) * 15).toFixed(1);
             document.getElementById('val-rpm').innerText = currentRPM + ' RPM';
             document.getElementById('val-radius').innerText = Math.max(40, Math.floor(100 - p * 60)) + ' AU';
 
-            // --- 粒子系統更新 ---
             const posAttr = nebulaGeo.attributes.position;
             const colAttr = nebulaGeo.attributes.color;
-            
-            // 角速度隨進度增加 (角動量守恆視覺化)
             const baseOmega = 0.002 + (p * p) * 0.03; 
 
             for(let i=0; i<PARTICLE_COUNT; i++) {
                 let data = particleBaseData[i];
                 
-                // 1. 扁平化邏輯 (Y軸壓縮)
-                // 隨著 p 增加，高度趨近於 0
                 let flattenFactor = Math.max(0.01, 1.0 - (p * 1.5 * params.gravityMultiplier));
-                if (p > 0.6) flattenFactor = 0.02; // 完全扁平
-                
+                if (p > 0.6) flattenFactor = 0.02; 
                 let targetY = data.yBase * flattenFactor;
 
-                // 2. 向心坍縮邏輯 (半徑壓縮)
                 let collapseFactor = Math.max(0.3, 1.0 - (p * 0.6 * params.gravityMultiplier));
                 let targetR = data.rBase * collapseFactor;
 
-                // 4. 吸積成行星邏輯 (Stage 4)
                 let opacityFactor = 1.0;
+                
+                // ==========================================
+                // 修正重點：讓背景塵埃在第四階段退場，讓行星清晰可見
+                // ==========================================
                 if (p > 0.75) {
-                    // 吸積階段：粒子被吸收到鄰近行星軌道，或者消失（被清除）
-                    let clearingProgress = (p - 0.75) * 4.0; // 0 到 1
+                    let clearingProgress = (p - 0.75) * 4.0; 
                     
-                    let closestOrbit = planetOrbits[0];
-                    let minDist = Math.abs(targetR - planetOrbits[0]);
-                    planetOrbits.forEach(orb => {
-                        if(Math.abs(targetR - orb) < minDist) { minDist = Math.abs(targetR - orb); closestOrbit = orb; }
+                    let closestOrbit = planetData[0].dist;
+                    let minDist = Math.abs(targetR - planetData[0].dist);
+                    planetData.forEach(pd => {
+                        let d = Math.abs(targetR - pd.dist);
+                        if(d < minDist) { minDist = d; closestOrbit = pd.dist; }
                     });
 
-                    if (minDist < 20) {
-                        // 吸向軌道
+                    if (minDist < 12) {
+                        // 在行星軌道附近的塵埃會被吸過去
                         targetR = targetR + (closestOrbit - targetR) * clearingProgress;
                         targetY = targetY * (1.0 - clearingProgress);
                     } else {
-                        // 軌道空隙清除 (被恆星吹散或吞噬)
-                        if (targetR > 15) {
-                            opacityFactor = Math.max(0, 1.0 - clearingProgress * 2.0);
-                        }
+                        // 不在軌道上的塵埃，模擬被太陽風吹散，透明度大幅下降
+                        opacityFactor = Math.max(0, 1.0 - clearingProgress * 1.5);
                     }
                 }
 
-                // 計算自轉
-                // 越靠近中心轉越快 (克卜勒定律)
                 let angularSpeed = baseOmega * data.speedOffset * (100 / Math.max(10, targetR));
                 data.theta += angularSpeed;
 
-                // 更新位置
                 posAttr.array[i*3] = targetR * Math.cos(data.theta);
                 posAttr.array[i*3+1] = targetY;
                 posAttr.array[i*3+2] = targetR * Math.sin(data.theta);
 
-                // --- 顏色與溫度變化 (Stage 3 雪線) ---
-                let rColor = 0.6, gColor = 0.5, bColor = 0.5; // 預設塵埃色
+                let rColor = 0.6, gColor = 0.5, bColor = 0.5; 
                 
                 if (p > 0.5 && targetR > 15) {
-                    let tempEffect = (p - 0.5) * 2.0; // 0 到 1
+                    let tempEffect = (p - 0.5) * 2.0; 
                     if (params.showFrostLine) {
                         if (data.isIcy) {
-                            // 雪線外：冰與氣體 (泛藍/白)
                             bColor = 0.5 + 0.5 * tempEffect;
                             rColor = 0.6 - 0.2 * tempEffect;
                             gColor = 0.5 + 0.3 * tempEffect;
                         } else {
-                            // 雪線內：岩石與金屬 (紅褐/灰)
                             rColor = 0.6 + 0.3 * tempEffect;
                             gColor = 0.5 - 0.1 * tempEffect;
                             bColor = 0.5 - 0.2 * tempEffect;
@@ -358,9 +329,8 @@
                     }
                 }
 
-                // 若靠近中心原恆星，被高溫照亮發紅
-                if (targetR < 30 && p > 0.3) {
-                    let glow = Math.max(0, 1.0 - targetR/30) * p;
+                if (targetR < 20 && p > 0.3) {
+                    let glow = Math.max(0, 1.0 - targetR/20) * p;
                     rColor += glow; gColor += glow * 0.5;
                 }
 
@@ -372,11 +342,10 @@
             posAttr.needsUpdate = true;
             colAttr.needsUpdate = true;
 
-            // --- 中心恆星變化 ---
             if (p > 0.25) {
-                let starP = (p - 0.25) * 1.33; // 0 to 1
+                let starP = (p - 0.25) * 1.33; 
                 sunMat.opacity = Math.min(1.0, starP * 2);
-                sunMat.color.setHSL(0.1 + starP*0.05, 1.0, 0.4 + starP*0.3); // 從暗紅變為明黃
+                sunMat.color.setHSL(0.1 + starP*0.05, 1.0, 0.4 + starP*0.3); 
                 
                 glowMat.opacity = starP * 0.6;
                 glowMesh.scale.set(1 + starP, 1 + starP, 1 + starP);
@@ -385,26 +354,25 @@
                 sunMat.opacity = 0; glowMat.opacity = 0; pointLight.intensity = 0;
             }
 
-            // --- 雪線指示環 ---
             if (p > 0.45 && p < 0.8 && params.showFrostLine) {
-                let ringP = Math.sin((p - 0.45) * 3.14 / 0.35); // 淡入淡出
+                let ringP = Math.sin((p - 0.45) * 3.14 / 0.35); 
                 frostRing.material.opacity = ringP * 0.5;
-                // 使雪線半徑配合星雲坍縮稍微縮小
                 let scaleR = Math.max(0.5, 1.0 - (p * 0.5));
                 frostRing.scale.set(scaleR, scaleR, scaleR);
             } else {
                 frostRing.material.opacity = 0;
             }
 
-            // --- 行星生成與公轉 ---
-            planets.forEach((pObj, idx) => {
+            planets.forEach((pObj) => {
                 if (p > 0.8) {
-                    let planetP = (p - 0.8) * 5.0; // 0 到 1
+                    let planetP = (p - 0.8) * 5.0; 
                     pObj.mesh.material.opacity = Math.min(1.0, planetP);
+                    if(pObj.ring) pObj.ring.material.opacity = Math.min(1.0, planetP);
                 } else {
                     pObj.mesh.material.opacity = 0;
+                    if(pObj.ring) pObj.ring.material.opacity = 0;
                 }
-                // 公轉
+                // 每顆恆星各自的速度公轉
                 pObj.pivot.rotation.y += pObj.speed * (0.5 + p); 
             });
 
@@ -412,14 +380,12 @@
             renderer.render(scene, camera);
         }
 
-        // 處理視窗縮放
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // 啟動動畫迴圈
         animate();
     </script>
 </body>
