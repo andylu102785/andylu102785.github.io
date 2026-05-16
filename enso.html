@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聖嬰現象(ENSO) 3D海氣互動模擬器</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000b18; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; color: #333; }
+        
+        .panel { pointer-events: auto; z-index: 100; position: absolute; }
+        .drag-handle { cursor: move; user-select: none; border-bottom: 2px solid #2a9d8f; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .drag-handle::before { content: '⠿'; color: #ccc; margin-right: 8px; font-size: 1.2em; }
+        .drag-title-text { flex-grow: 1; font-size: 1.1rem; color: #003566; font-weight: bold; margin: 0; }
+
+        #ui-panel { top: 15px; left: 15px; background: rgba(240, 248, 255, 0.95); padding: 15px 20px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 360px; }
+        
+        .stage-badge { display: inline-block; padding: 6px 14px; margin-bottom: 10px; border-radius: 20px; font-weight: bold; font-size: 1.2rem; color: #fff; transition: background 0.5s; text-align: center; width: calc(100% - 28px); }
+        .normal-stage { background: #2a9d8f; } 
+        .elnino-stage { background: #e76f51; } 
+        .lanina-stage { background: #0077b6; }
+
+        .status-box { padding: 12px; border-radius: 8px; background: #fff; border-left: 5px solid #ccc; transition: all 0.3s ease; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
+        #status-text { font-size: 0.95rem; color: #333; line-height: 1.6; }
+        .status-highlight { font-weight: bold; font-size: 1.1em; }
+
+        #chart-container { bottom: 20px; right: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 420px; height: 240px; }
+        .chart-drag-handle { cursor: move; font-size: 0.9rem; color: #003566; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 4px; user-select: none; }
+
+        #data-log-panel { top: 15px; right: 20px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 420px; max-height: 250px; overflow-y: auto; }
+        .log-title { font-size: 0.95rem; font-weight: bold; color: #003566; margin-bottom: 8px; border-bottom: 2px solid #2a9d8f; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none;}
+        .log-btn { background: #2a9d8f; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .log-btn:hover { background: #21867a; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: center; }
+        th { background: #e9ecef; padding: 6px; position: sticky; top: 0; }
+        td { padding: 6px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        tr:hover { background: #e2e6ea; }
+
+        .sst-legend { margin-top: 15px; font-size: 0.85rem; font-weight: bold; }
+        .gradient-bar { height: 12px; width: 100%; background: linear-gradient(to right, #0044ff, #00ccff, #ffff00, #ff6600, #ff0000); border-radius: 6px; margin-top: 5px; }
+        .legend-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #555; margin-top: 2px; }
+
+        /* 3D 空間中的 HTML 標籤 */
+        .geo-label { position: absolute; color: white; font-weight: bold; font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none; transform: translate(-50%, -50%); opacity: 0.8; }
+
+        .dg.main { margin-top: 15px !important; }
+        @media (max-width: 900px) { #chart-container, #data-log-panel { display: none !important; } }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- 標籤：將透過 JS 對齊 3D 座標 -->
+    <div id="label-west" class="geo-label">西太平洋<br>(印尼 / 澳洲)</div>
+    <div id="label-east" class="geo-label">東太平洋<br>(南美洲 秘魯)</div>
+
+    <!-- 左側控制面板 -->
+    <div id="ui-panel" class="panel">
+        <div class="drag-handle" id="ui-drag-handle"><h1 class="drag-title-text">ENSO 海氣互動模擬器</h1></div>
+        <div id="stage-badge" class="stage-badge normal-stage">正常年 (Normal)</div>
+        <div class="status-box" id="status-container">
+            <div id="status-text">
+                海洋尼諾指數 (ONI): <span id="val-oni" class="status-highlight">0.0</span> °C<br>
+                東太平洋海溫異常: <span id="val-sst" class="status-highlight">0.0</span> °C<br>
+                信風狀態: <span id="val-wind" class="status-highlight">正常偏東風</span><br>
+                氣象特徵: <span id="val-weather" style="color:#0077b6; font-weight:bold;">西側降雨、東側湧升流</span>
+            </div>
+        </div>
+        <div class="sst-legend">
+            海表溫度 (SST) 示意圖例
+            <div class="gradient-bar"></div>
+            <div class="legend-labels"><span>冷 (湧升流)</span><span>正常</span><span>暖 (暖水池)</span></div>
+        </div>
+    </div>
+
+    <!-- 右側數據觀測紀錄表 -->
+    <div id="data-log-panel" class="panel">
+        <div class="log-title" id="log-drag-handle">
+            <span>⠿ 海氣象科學觀測紀錄</span>
+            <button class="log-btn" onclick="exportCSV()">匯出 CSV</button>
+        </div>
+        <table id="log-table">
+            <thead><tr><th>時間(月)</th><th>ONI 指數</th><th>東太平洋 ΔSST</th><th>信風強度</th><th>狀態判定</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- 右下角時序圖 -->
+    <div id="chart-container" class="panel">
+        <div class="chart-drag-handle" id="chart-drag-handle">⠿ ENSO 實時監測時序圖</div>
+        <canvas id="ensoChart"></canvas>
+    </div>
+
+    <script>
+        // --- UI 拖曳功能 ---
+        function makeDraggable(elmnt, handleId) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; const handle = document.getElementById(handleId);
+            if (handle) { handle.onmousedown = dragMouseDown; handle.ontouchstart = dragTouchStart; }
+            function dragMouseDown(e) { if(e.target.tagName === 'BUTTON') return; e.preventDefault(); initDragState(e.clientX, e.clientY); document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
+            function dragTouchStart(e) { if(e.target.tagName === 'BUTTON') return; const touch = e.touches[0]; initDragState(touch.clientX, touch.clientY); document.ontouchend = closeDragElement; document.ontouchmove = elementTouchDrag; }
+            function initDragState(clientX, clientY) { elmnt.style.top = elmnt.offsetTop + "px"; elmnt.style.left = elmnt.offsetLeft + "px"; elmnt.style.bottom = "auto"; elmnt.style.right = "auto"; pos3 = clientX; pos4 = clientY; }
+            function elementDrag(e) { e.preventDefault(); performDrag(e.clientX, e.clientY); }
+            function elementTouchDrag(e) { performDrag(e.touches[0].clientX, e.touches[0].clientY); }
+            function performDrag(clientX, clientY) { pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY; elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px"; }
+            function closeDragElement() { document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null; }
+        }
+        makeDraggable(document.getElementById("ui-panel"), "ui-drag-handle"); 
+        makeDraggable(document.getElementById("data-log-panel"), "log-drag-handle"); 
+        makeDraggable(document.getElementById("chart-container"), "chart-drag-handle");
+
+        // --- 全域模擬參數 ---
+        const params = {
+            targetONI: 0.0,      // 目標 ONI 指數 (Oceanic Niño Index)
+            currentONI: 0.0,     // 當前平滑過渡中的 ONI 指數
+            transitionSpeed: 0.02,
+            autoTime: 0,
+            isAutoPlaying: true,
+            showAir: true,
+            showCloudsRain: true,
+            showThermocline: true,
+            // 預設情境按鈕
+            setLaNina: () => { params.targetONI = -2.5; },
+            setNormal: () => { params.targetONI = 0.0; },
+            setElNino: () => { params.targetONI = 2.8; }
+        };
+
+        let frameCount = 0;
+        let simMonth = 0;
+
+        // --- Three.js 場景初始化 ---
+        const scene = new THREE.Scene(); 
+        scene.background = new THREE.Color('#001020'); 
+        scene.fog = new THREE.FogExp2('#001020', 0.003);
+        
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 1000); 
+        camera.position.set(0, 70, 180);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); 
+        renderer.setPixelRatio(window.devicePixelRatio); 
+        renderer.setSize(window.innerWidth, window.innerHeight); 
+        document.body.appendChild(renderer.domElement);
+        
+        const controls = new THREE.OrbitControls(camera, renderer.domElement); 
+        controls.enableDamping = true;
+        controls.maxPolarAngle = Math.PI / 2 + 0.1; // 允許稍微看到海平面下
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(50, 100, 50); scene.add(dirLight);
+
+        // --- 建立地形 (西太平洋與東太平洋陸地) ---
+        function createLandmass(xPos, width, colorHex) {
+            const geo = new THREE.BoxGeometry(width, 20, 60);
+            const mat = new THREE.MeshPhongMaterial({ color: colorHex, flatShading: true });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(xPos, 5, 0);
+            scene.add(mesh);
+            return mesh;
+        }
+        const landWest = createLandmass(-110, 20, 0x3d5a80); // 印尼/澳洲
+        const landEast = createLandmass(110, 20, 0x8f7a66);  // 南美洲
+
+        // 標籤座標追蹤
+        const labelWest = document.getElementById('label-west');
+        const labelEast = document.getElementById('label-east');
+        function updateLabels() {
+            const vectorW = new THREE.Vector3(-110, 25, 0).project(camera);
+            labelWest.style.left = (vectorW.x * .5 + .5) * window.innerWidth + 'px';
+            labelWest.style.top = (-(vectorW.y * .5) + .5) * window.innerHeight + 'px';
+            
+            const vectorE = new THREE.Vector3(110, 25, 0).project(camera);
+            labelEast.style.left = (vectorE.x * .5 + .5) * window.innerWidth + 'px';
+            labelEast.style.top = (-(vectorE.y * .5) + .5) * window.innerHeight + 'px';
+        }
+
+        // --- 海洋系統 (SST 漸層與斜溫層) ---
+        const OCEAN_WIDTH = 200;
+        const OCEAN_DEPTH = 60;
+        
+        // 1. 海表面 (產生動態漸層貼圖)
+        const sstCanvas = document.createElement('canvas');
+        sstCanvas.width = 512; sstCanvas.height = 2;
+        const sstCtx = sstCanvas.getContext('2d');
+        const sstTexture = new THREE.CanvasTexture(sstCanvas);
+        
+        const oceanSurfaceGeo = new THREE.PlaneGeometry(OCEAN_WIDTH, OCEAN_DEPTH, 1, 1);
+        const oceanSurfaceMat = new THREE.MeshBasicMaterial({ map: sstTexture, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+        const oceanSurface = new THREE.Mesh(oceanSurfaceGeo, oceanSurfaceMat);
+        oceanSurface.rotation.x = -Math.PI / 2;
+        scene.add(oceanSurface);
+
+        // 2. 斜溫層 (Thermocline) - 網格變形
+        const thermoGeo = new THREE.PlaneGeometry(OCEAN_WIDTH, OCEAN_DEPTH, 50, 10);
+        const thermoMat = new THREE.MeshBasicMaterial({ color: 0x48cae4, wireframe: true, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+        const thermocline = new THREE.Mesh(thermoGeo, thermoMat);
+        thermocline.rotation.x = -Math.PI / 2;
+        scene.add(thermocline);
+
+        // 3. 深層冷水底板
+        const deepOcean = new THREE.Mesh(
+            new THREE.BoxGeometry(OCEAN_WIDTH, 40, OCEAN_DEPTH),
+            new THREE.MeshBasicMaterial({ color: 0x001d3d, transparent: true, opacity: 0.6 })
+        );
+        deepOcean.position.y = -20;
+        scene.add(deepOcean);
+
+        function updateOceanVisuals(oni) {
+            // 更新 SST 貼圖
+            // ONI: -3 (La Nina) 到 +3 (El Nino)
+            sstCtx.clearRect(0, 0, 512, 2);
+            const grd = sstCtx.createLinearGradient(0, 0, 512, 0);
+            
+            // 計算暖水池邊界 (0 到 1)
+            let warmPoolEdge = 0.5 + (oni / 6); // Normal(0)->0.5, ElNino(3)->1.0, LaNina(-3)->0.0
+            warmPoolEdge = Math.max(0.1, Math.min(0.9, warmPoolEdge));
+            
+            grd.addColorStop(0, '#ff0000'); // 極西：熱
+            grd.addColorStop(Math.max(0, warmPoolEdge - 0.2), '#ff6600');
+            grd.addColorStop(warmPoolEdge, '#ffff00');
+            grd.addColorStop(Math.min(1, warmPoolEdge + 0.2), '#00ccff');
+            grd.addColorStop(1, '#0044ff'); // 極東：冷
+            
+            sstCtx.fillStyle = grd;
+            sstCtx.fillRect(0, 0, 512, 2);
+            sstTexture.needsUpdate = true;
+
+            // 更新斜溫層深度 (湧升流)
+            // Normal: 西深東淺, El Nino: 平坦, La Nina: 西極深東極淺
+            const positions = thermocline.geometry.attributes.position.array;
+            for (let i = 0; i < positions.length; i += 3) {
+                let xPos = positions[i]; // -100 to 100
+                let normalizedX = (xPos + 100) / 200; // 0 (West) to 1 (East)
+                
+                // 基礎傾斜: -20 (西) 到 0 (東)
+                let baseDepth = -20 + (normalizedX * 20); 
+                
+                // ENSO 影響傾斜度
+                let ensoEffect = oni * 5; // El Nino(+): 讓東側變深(+15), 西側變淺
+                
+                // 使用 tanh 製作非線性斜坡
+                let depth = -25 + 20 * Math.tanh(2 * normalizedX + (oni*0.5));
+                
+                // Z軸是 Plane 的 Y 軸 (因為旋轉過)
+                positions[i+2] = -Math.abs(depth); 
+            }
+            thermocline.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // --- 粒子系統 (大氣環流、雲、雨) ---
+        const AIR_COUNT = 3000;
+        const CLOUD_COUNT = 1500;
+        const RAIN_COUNT = 1000;
+
+        function createParticles(count, size, color, opacity, blending) {
+            const geo = new THREE.BufferGeometry();
+            const pos = new Float32Array(count * 3);
+            const extra = new Float32Array(count * 3); // 儲存原始屬性 (life, speed, offset)
+            for(let i=0; i<count; i++) {
+                pos[i*3] = (Math.random() - 0.5) * OCEAN_WIDTH;
+                pos[i*3+1] = Math.random() * 50;
+                pos[i*3+2] = (Math.random() - 0.5) * 40;
+                extra[i*3] = Math.random(); // life
+            }
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            geo.setAttribute('extra', new THREE.BufferAttribute(extra, 3));
+            const mat = new THREE.PointsMaterial({ color: color, size: size, transparent: true, opacity: opacity, blending: blending, depthWrite: false });
+            return new THREE.Points(geo, mat);
+        }
+
+        const airParticles = createParticles(AIR_COUNT, 1.5, 0xffffff, 0.5, THREE.AdditiveBlending);
+        const cloudParticles = createParticles(CLOUD_COUNT, 8.0, 0xdddddd, 0.4, THREE.NormalBlending);
+        const rainParticles = createParticles(RAIN_COUNT, 2.0, 0x00aaff, 0.8, THREE.NormalBlending);
+        
+        scene.add(airParticles); scene.add(cloudParticles); scene.add(rainParticles);
+
+        function updateAtmosphere(oni) {
+            // 對流中心位置 (Convection Center)
+            let convectionX = -60 + (oni * 25); // Normal: -60, ElNino: ~15 (中東部), LaNina: ~-135 (極西)
+            convectionX = Math.max(-95, Math.min(60, convectionX));
+
+            const windStrength = 1.0 - (oni * 0.3); // Normal: 1.0, LaNina: 1.9 (強東風), ElNino: 0.1 (弱風或西風)
+
+            // 更新空氣流場 (沃克環流 Walker Circulation)
+            if(params.showAir) {
+                let pos = airParticles.geometry.attributes.position.array;
+                let extra = airParticles.geometry.attributes.extra.array;
+                for(let i=0; i<AIR_COUNT; i++) {
+                    let x = pos[i*3], y = pos[i*3+1], z = pos[i*3+2];
+                    let dx = x - convectionX;
+                    
+                    // 速度場計算
+                    let vx = 0, vy = 0;
+                    if (y < 20) { // 下層表面風 (信風)
+                        vx = -Math.sign(dx) * Math.max(0.2, windStrength) * 1.5;
+                        if (Math.abs(dx) < 20) vy = (20 - Math.abs(dx)) * 0.05; // 對流上升
+                    } else { // 上層高空風
+                        vx = Math.sign(dx) * 1.0;
+                        if (Math.abs(dx) > 80 && y < 45) vy = -0.5; // 邊緣下沉
+                    }
+
+                    x += vx; y += vy;
+                    
+                    // 邊界循環
+                    if (x < -100) { x = 100; y = Math.random()*20+30; }
+                    if (x > 100) { x = -100; y = Math.random()*20+30; }
+                    if (y > 50) y = 50; if (y < 1) y = 1;
+
+                    pos[i*3] = x; pos[i*3+1] = y;
+                }
+                airParticles.geometry.attributes.position.needsUpdate = true;
+                airParticles.visible = true;
+            } else { airParticles.visible = false; }
+
+            // 更新雲與雨 (聚集在對流中心)
+            if(params.showCloudsRain) {
+                let cPos = cloudParticles.geometry.attributes.position.array;
+                for(let i=0; i<CLOUD_COUNT; i++) {
+                    if (Math.random() < 0.02) { // 隨機重生於對流區
+                        cPos[i*3] = convectionX + (Math.random()-0.5)*50;
+                        cPos[i*3+1] = 10 + Math.random()*30;
+                        cPos[i*3+2] = (Math.random()-0.5)*30;
+                    } else {
+                        cPos[i*3] += (cPos[i*3+1] > 25 ? 0.2 : -0.2); // 高空向外，低空向內
+                        cPos[i*3+1] += 0.1; // 緩慢上升
+                    }
+                }
+                cloudParticles.geometry.attributes.position.needsUpdate = true;
+
+                let rPos = rainParticles.geometry.attributes.position.array;
+                for(let i=0; i<RAIN_COUNT; i++) {
+                    rPos[i*3+1] -= 1.5; // 掉落速度
+                    if (rPos[i*3+1] < 0) { // 觸海重生
+                        rPos[i*3] = convectionX + (Math.random()-0.5)*40;
+                        rPos[i*3+1] = 15 + Math.random()*15;
+                        rPos[i*3+2] = (Math.random()-0.5)*20;
+                    }
+                }
+                rainParticles.geometry.attributes.position.needsUpdate = true;
+                cloudParticles.visible = true; rainParticles.visible = true;
+            } else { cloudParticles.visible = false; rainParticles.visible = false; }
+            
+            thermocline.visible = params.showThermocline;
+        }
+
+        // --- Chart.js 時序圖設定 ---
+        const ctxChart = document.getElementById('ensoChart').getContext('2d');
+        const ensoChart = new Chart(ctxChart, { 
+            type: 'line', 
+            data: { 
+                labels: [], 
+                datasets: [ 
+                    { label: 'ONI 指數 (°C)', data: [], borderColor: '#ffca3a', backgroundColor: 'rgba(255,202,58,0.2)', fill: true, tension: 0.3, yAxisID: 'y' }
+                ] 
+            }, 
+            options: { 
+                responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
+                plugins: { legend: { display: true, labels: { font: { size: 10 } } } }, 
+                scales: { 
+                    x: { display: true, ticks: { maxTicksLimit: 10, font: {size: 9} } }, 
+                    y: { type: 'linear', display: true, min: -4, max: 4, grid: { color: (ctx) => ctx.tick.value === 0 ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.1)', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 } } 
+                } 
+            } 
+        });
+
+        // --- GUI 面板設定 ---
+        const gui = new dat.GUI({ width: 320 });
+        const f1 = gui.addFolder('1. 聖嬰現象情境切換');
+        f1.add(params, 'setLaNina').name('❄️ 觸發：反聖嬰現象 (La Niña)');
+        f1.add(params, 'setNormal').name('🌊 觸發：正常狀態 (Normal)');
+        f1.add(params, 'setElNino').name('🔥 觸發：聖嬰現象 (El Niño)');
+        const customONI = f1.add(params, 'targetONI', -3, 3).name('手動調整 ONI 指數').listen();
+        
+        const f2 = gui.addFolder('2. 視覺化圖層開關');
+        f2.add(params, 'showThermocline').name('顯示海底斜溫層');
+        f2.add(params, 'showAir').name('顯示沃克環流 (空氣分子)');
+        f2.add(params, 'showCloudsRain').name('顯示對流雲帶與降雨');
+        f1.open(); f2.open();
+
+        // --- 匯出 CSV 功能 ---
+        window.exportCSV = function() {
+            let table = document.getElementById("log-table"); let rows = table.querySelectorAll("tr"); let csv = [];
+            for (let i = 0; i < rows.length; i++) { let row = [], cols = rows[i].querySelectorAll("td, th"); for (let j = 0; j < cols.length; j++) row.push(cols[j].innerText); csv.push(row.join(",")); }
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csv.join("\n"); let encodedUri = encodeURI(csvContent); let link = document.createElement("a");
+            link.setAttribute("href", encodedUri); link.setAttribute("download", "ENSO_Simulation_Data.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
+
+        // --- 更新 UI 文字與紀錄 ---
+        function updateUIandLog() {
+            const oni = params.currentONI;
+            const sstAnomaly = oni * 0.8; // 近似換算
+            
+            // 判斷狀態
+            let stageClass = "normal-stage";
+            let stageName = "正常年 (Normal)";
+            let windDesc = "正常偏東風 (東南信風)";
+            let weatherDesc = "西側多雨、東側湧升流豐富";
+
+            if (oni > 0.5) {
+                stageClass = "elnino-stage"; stageName = "聖嬰現象 (El Niño)";
+                windDesc = "信風極度減弱，甚至轉為西風";
+                weatherDesc = "降雨東移中太平洋，西側乾旱、東側豪雨";
+            } else if (oni < -0.5) {
+                stageClass = "lanina-stage"; stageName = "反聖嬰現象 (La Niña)";
+                windDesc = "信風異常增強";
+                weatherDesc = "西側劇烈豪雨，東側湧升流極強(寒冷乾燥)";
+            }
+
+            // 更新 Badge & Status
+            const badge = document.getElementById('stage-badge');
+            badge.className = "stage-badge " + stageClass;
+            badge.innerText = stageName;
+
+            document.getElementById('val-oni').innerText = oni.toFixed(2);
+            document.getElementById('val-sst').innerText = (sstAnomaly > 0 ? "+" : "") + sstAnomaly.toFixed(2);
+            document.getElementById('val-wind').innerText = windDesc;
+            document.getElementById('val-weather').innerText = weatherDesc;
+
+            // 每隔一段時間寫入 Log 與 Chart
+            if (frameCount % 60 === 0) {
+                simMonth++;
+                let logTable = document.getElementById('log-table').getElementsByTagName('tbody')[0];
+                let row = logTable.insertRow(0);
+                if (logTable.rows.length > 30) logTable.deleteRow(30); // 保持表格長度
+                
+                let windVal = (1.0 - oni*0.3).toFixed(2);
+                row.innerHTML = `<td>第 ${simMonth} 個月</td><td>${oni.toFixed(2)}</td><td>${sstAnomaly.toFixed(2)}</td><td>${windVal}</td><td>${stageName.split(' ')[0]}</td>`;
+                
+                ensoChart.data.labels.push('M' + simMonth);
+                ensoChart.data.datasets[0].data.push(oni.toFixed(2));
+                if (ensoChart.data.labels.length > 30) {
+                    ensoChart.data.labels.shift();
+                    ensoChart.data.datasets[0].data.shift();
+                }
+                ensoChart.update();
+            }
+        }
+
+        // --- 主渲染迴圈 ---
+        function animate() {
+            requestAnimationFrame(animate);
+            frameCount++;
+
+            // 平滑過渡 ONI 值
+            params.currentONI += (params.targetONI - params.currentONI) * params.transitionSpeed;
+
+            // 更新系統
+            updateOceanVisuals(params.currentONI);
+            updateAtmosphere(params.currentONI);
+            updateLabels();
+            updateUIandLog();
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // RWD 視窗縮放
+        window.addEventListener('resize', () => { 
+            camera.aspect = window.innerWidth / window.innerHeight; 
+            camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        });
+
+        // 啟動
+        animate();
+    </script>
+</body>
+</html>
