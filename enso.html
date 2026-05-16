@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>聖嬰現象(ENSO) 3D海氣互動模擬器</title>
+    <title>聖嬰現象(ENSO) 3D海氣互動模擬器 (雙環流修正版)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000b18; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; color: #333; }
         
@@ -114,8 +114,8 @@
             targetONI: 0.0,
             currentONI: 0.0,
             transitionSpeed: 0.02,
-            isPaused: false,      // 新增：暫停開關
-            autoRecord: true,     // 新增：紀錄開關
+            isPaused: false,
+            autoRecord: true,
             showAir: true,
             showCloudsRain: true,
             showThermocline: true,
@@ -223,25 +223,25 @@
             thermocline.geometry.attributes.position.needsUpdate = true;
         }
 
-        // --- 粒子與雲系系統 (升級版) ---
+        // --- 粒子與雲系系統 ---
         const AIR_COUNT = 1500;
         const RAIN_COUNT = 800;
 
-        // 1. 沃克環流 (大氣粒子)
+        // 沃克環流 (大氣粒子)
         const airGeo = new THREE.BufferGeometry();
         const airPos = new Float32Array(AIR_COUNT * 3);
-        const airExtra = new Float32Array(AIR_COUNT * 3); // 存放 [角度, 半徑偏移, Z軸偏移]
+        const airExtra = new Float32Array(AIR_COUNT * 3); // [角度, 半徑偏移, Z軸偏移]
         for(let i=0; i<AIR_COUNT; i++) {
-            airExtra[i*3] = Math.random() * Math.PI * 2; // Angle
-            airExtra[i*3+1] = (Math.random() - 0.5) * 15; // R offset
-            airExtra[i*3+2] = (Math.random() - 0.5) * 30; // Z offset
+            airExtra[i*3] = Math.random() * Math.PI * 2;
+            airExtra[i*3+1] = (Math.random() - 0.5) * 15;
+            airExtra[i*3+2] = (Math.random() - 0.5) * 30;
         }
         airGeo.setAttribute('position', new THREE.BufferAttribute(airPos, 3));
         airGeo.setAttribute('extra', new THREE.BufferAttribute(airExtra, 3));
         const airParticles = new THREE.Points(airGeo, new THREE.PointsMaterial({ color: 0xade8f4, size: 2.0, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }));
         scene.add(airParticles);
 
-        // 2. 實體 3D 雲群組 (取代原本的點陣雲)
+        // 實體 3D 雲群組
         const cloudGroup = new THREE.Group();
         const cloudGeo = new THREE.SphereGeometry(6, 16, 16);
         const cloudMat = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true, transparent: true, opacity: 0.95 });
@@ -254,7 +254,7 @@
         cloudGroup.position.y = 20;
         scene.add(cloudGroup);
 
-        // 3. 降雨系統
+        // 降雨系統
         const rainGeo = new THREE.BufferGeometry();
         const rainPos = new Float32Array(RAIN_COUNT * 3);
         for(let i=0; i<RAIN_COUNT; i++) {
@@ -264,47 +264,69 @@
         }
         rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
         const rainParticles = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: 0x00aaff, size: 2.0, transparent: true, opacity: 0.8, blending: THREE.NormalBlending, depthWrite: false }));
-        cloudGroup.add(rainParticles); // 將雨綁定在雲下方
+        cloudGroup.add(rainParticles);
 
+        // --- ★ 核心修正：將沃克環流分裂為東、西兩個氣室 ---
         function updateAtmosphere(oni) {
             let convectionX = Math.max(-95, Math.min(60, -60 + (oni * 25)));
-            let windSpeed = 1.0 - (oni * 0.3); // 正值為東風(正常/反聖嬰)，負值為西風(聖嬰)
 
-            // 更新沃克環流 (橢圓軌道)
             if(params.showAir) {
                 let wPos = airParticles.geometry.attributes.position.array;
                 let wExtra = airParticles.geometry.attributes.extra.array;
                 
-                // 動態計算環流中心與半徑
-                let loopCx = (convectionX + 80) / 2;
-                let loopRx = Math.abs(80 - convectionX) / 2 + 15;
+                // 動態計算東側與西側的兩個獨立環流圈
+                // 東側環流 (正常沃克環流主體)
+                let loopEastCx = (convectionX + 85) / 2;
+                let loopEastRx = Math.abs(85 - convectionX) / 2 + 5;
+                
+                // 西側環流 (聖嬰現象時出現的異常下沉環流)
+                let loopWestCx = (-95 + convectionX) / 2;
+                let loopWestRx = Math.abs(convectionX - (-95)) / 2 + 5;
+
                 let loopRy = 22;
+                
+                // ENSO 狀態改變兩側風速 (動態視覺強弱)
+                let eastSpeed = Math.max(0.005, 0.02 - (oni * 0.005));
+                let westSpeed = Math.max(0.005, 0.02 + (oni * 0.005));
 
                 for(let i=0; i<AIR_COUNT; i++) {
-                    wExtra[i*3] -= 0.02 * windSpeed; // 根據風速推進角度
-                    let angle = wExtra[i*3];
-                    let rOff = wExtra[i*3+1];
-                    let zOff = wExtra[i*3+2];
+                    let isEastCell = (i < AIR_COUNT / 2);
 
-                    wPos[i*3] = loopCx + Math.cos(angle) * (loopRx + rOff);
-                    wPos[i*3+1] = 25 + Math.sin(angle) * (loopRy + rOff);
-                    wPos[i*3+2] = zOff;
+                    if (isEastCell) {
+                        // 東側環流：逆時針(表面吹東風向西)
+                        wExtra[i*3] -= eastSpeed; 
+                        let angle = wExtra[i*3];
+                        let rOff = wExtra[i*3+1];
+                        let zOff = wExtra[i*3+2];
+
+                        wPos[i*3] = loopEastCx + Math.cos(angle) * (loopEastRx + rOff);
+                        wPos[i*3+1] = 25 + Math.sin(angle) * (loopRy + rOff);
+                        wPos[i*3+2] = zOff;
+                    } else {
+                        // 西側環流：順時針(表面異常吹西風向東)
+                        wExtra[i*3] += westSpeed; 
+                        let angle = wExtra[i*3];
+                        let rOff = wExtra[i*3+1];
+                        let zOff = wExtra[i*3+2];
+
+                        wPos[i*3] = loopWestCx + Math.cos(angle) * (loopWestRx + rOff);
+                        wPos[i*3+1] = 25 + Math.sin(angle) * (loopRy + rOff);
+                        wPos[i*3+2] = zOff;
+                    }
                 }
                 airParticles.geometry.attributes.position.needsUpdate = true;
                 airParticles.visible = true;
             } else { airParticles.visible = false; }
 
-            // 更新實體雲與降雨
+            // 雲層追蹤與降雨動畫
             if(params.showCloudsRain) {
-                // 雲層追蹤對流中心並產生微幅上下浮動 (呼吸感)
                 cloudGroup.position.x += (convectionX - cloudGroup.position.x) * 0.1;
                 cloudGroup.position.y = 20 + Math.sin(frameCount * 0.05) * 1.5;
 
-                // 雨滴下落動畫
                 let rPos = rainParticles.geometry.attributes.position.array;
                 for(let i=0; i<RAIN_COUNT; i++) {
                     rPos[i*3+1] -= 1.0; 
-                    if (rPos[i*3+1] < -20) { // 觸海重生於雲底
+                    if (rPos[i*3+1] < -20) { 
                         rPos[i*3] = (Math.random() - 0.5) * 35;
                         rPos[i*3+1] = 5 + Math.random() * 10;
                         rPos[i*3+2] = (Math.random() - 0.5) * 20;
@@ -362,9 +384,9 @@
             const oni = params.currentONI;
             const sstAnomaly = oni * 0.8; 
             
-            let stageClass = "normal-stage", stageName = "正常年 (Normal)", windDesc = "正常偏東風 (東南信風)", weatherDesc = "西側多雨、東側湧升流豐富";
-            if (oni > 0.5) { stageClass = "elnino-stage"; stageName = "聖嬰現象 (El Niño)"; windDesc = oni > 1.5 ? "信風崩潰/轉西風" : "信風極度減弱"; weatherDesc = "降雨東移中太平洋，西側乾旱"; } 
-            else if (oni < -0.5) { stageClass = "lanina-stage"; stageName = "反聖嬰現象 (La Niña)"; windDesc = "信風異常增強"; weatherDesc = "西側劇烈豪雨，東側極度乾燥"; }
+            let stageClass = "normal-stage", stageName = "正常年 (Normal)", windDesc = "強勁偏東風 (東南信風)", weatherDesc = "西側多雨、東側湧升流豐富";
+            if (oni > 0.5) { stageClass = "elnino-stage"; stageName = "聖嬰現象 (El Niño)"; windDesc = oni > 1.5 ? "異常偏西風爆發" : "信風極度減弱"; weatherDesc = "對流東移中太平洋，西側下沉乾旱"; } 
+            else if (oni < -0.5) { stageClass = "lanina-stage"; stageName = "反聖嬰現象 (La Niña)"; windDesc = "信風異常增強"; weatherDesc = "西側劇烈豪雨，東側極度寒冷乾燥"; }
 
             // 處理暫停標籤
             const pauseHTML = params.isPaused ? `<span class="paused-badge">暫停中</span>` : "";
@@ -383,7 +405,6 @@
                 let row = logTable.insertRow(0);
                 if (logTable.rows.length > 30) logTable.deleteRow(30); 
                 
-                let windVal = (1.0 - oni*0.3).toFixed(2);
                 row.innerHTML = `<td>第 ${simMonth} 個月</td><td>${oni.toFixed(2)}</td><td>${sstAnomaly.toFixed(2)}</td><td>${windDesc.split(' ')[0]}</td><td>${stageName.split(' ')[0]}</td>`;
                 
                 ensoChart.data.labels.push('M' + simMonth);
@@ -402,15 +423,12 @@
 
             if (!params.isPaused) {
                 frameCount++;
-                // 平滑過渡 ONI 值
                 params.currentONI += (params.targetONI - params.currentONI) * params.transitionSpeed;
                 
-                // 僅在非暫停時更新物理動畫
                 updateOceanVisuals(params.currentONI);
                 updateAtmosphere(params.currentONI);
             }
             
-            // UI與標籤仍保持更新 (讓拖曳與旋轉相機時不會卡頓)
             updateLabels();
             updateUIandLog();
 
