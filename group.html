@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高二自然探究A - 分組與座位表系統</title>
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --accent-color: #3b82f6;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            margin-bottom: 6px;
+        }
+
+        /* 彈出對話框 Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 25px 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            margin-top: 6px;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        /* 教室座位表版面 */
+        .classroom-container {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            display: none;
+        }
+
+        .section-tag {
+            text-align: center;
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .seating-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-bottom: 20px;
+        }
+
+        .group-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            background-color: #fafafa;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .group-card.active-group {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        .group-header {
+            font-weight: bold;
+            color: var(--primary-color);
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .member-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .chip {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .rostrum {
+            background-color: #374151;
+            color: #ffffff;
+            text-align: center;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 18px;
+            letter-spacing: 6px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .actions {
+            margin-top: 25px;
+            display: flex;
+            gap: 12px;
+        }
+
+        /* 靜態輸入清單 */
+        .member-inputs {
+            max-height: 240px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding-right: 5px;
+        }
+
+        .member-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .btn-remove {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        @media print {
+            .modal-overlay, .actions, header p {
+                display: none !important;
+            }
+            .classroom-container {
+                box-shadow: none;
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>115-1 高二自然探究A 座位表系統</h1>
+        <p id="current-class-info">請選擇班級與組別進入填寫</p>
+    </header>
+
+    <!-- 對話框 Step 1: 選擇班級與組別 -->
+    <div id="select-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>選擇班級與組別</h2>
+            <div class="form-group">
+                <label for="class-select">班級</label>
+                <select id="class-select">
+                    <option value="">-- 請選擇班級 --</option>
+                    <option value="204">204 班</option>
+                    <option value="206">206 班</option>
+                    <option value="208">208 班</option>
+                    <option value="214">214 班</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="group-select">組別</label>
+                <select id="group-select">
+                    <option value="">-- 請選擇組別 --</option>
+                    <script>
+                        for(let i=1; i<=9; i++){
+                            document.write(`<option value="${i}">第 ${i} 組 (Group ${i})</option>`);
+                        }
+                    </script>
+                </select>
+            </div>
+            <button class="btn" onclick="goToStep2()">下一步：填寫組員名單</button>
+            <button class="btn btn-secondary" onclick="directViewChart()">直接檢視整班座位表</button>
+        </div>
+    </div>
+
+    <!-- 對話框 Step 2: 填寫組員 -->
+    <div id="input-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3 id="modal-group-title">填寫組員名單</h3>
+            <p style="font-size: 13px; color: #6b7280; margin-top:-8px;">座號與姓名分開填寫，系統將自動組合。</p>
+            
+            <div class="member-inputs" id="member-inputs-container">
+                <!-- 動態生成的輸入框 -->
+            </div>
+            
+            <button type="button" class="btn btn-secondary" onclick="addMemberInput('', '')">+ 新增一位組員</button>
+            <button class="btn" onclick="saveAndGenerate()">儲存並生成座位表</button>
+        </div>
+    </div>
+
+    <!-- 座位表顯示區 -->
+    <div id="classroom-view" class="classroom-container">
+        
+        <div class="section-tag">▲ 教室後方 (Back of Classroom) ▲</div>
+
+        <!-- 3x3 九宮格：比照檔案佈局 -->
+        <!-- 排列順序：後排(9,8,7) -> 中排(6,5,4) -> 前排(3,2,1) -->
+        <div class="seating-grid" id="seating-grid">
+            <!-- 動態渲染 Group 卡片 -->
+        </div>
+
+        <div class="section-tag">▼ 教室前方 (Front of Classroom) ▼</div>
+
+        <!-- 講臺位於前方/下方 -->
+        <div class="rostrum">講 臺 (Rostrum)</div>
+
+        <div class="actions">
+            <button class="btn" onclick="reopenModal()">重新選擇班級 / 組別</button>
+            <button class="btn btn-secondary" onclick="window.print()">列印座位表 / 存為PDF</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentClass = "";
+    let currentGroup = "";
+
+    // 3x3 空間結構陣列
+    // 上(後排): Group 9, 8, 7
+    // 中(中排): Group 6, 5, 4
+    // 下(前排/講臺前): Group 3, 2, 1
+    const gridLayout = [
+        [9, 8, 7],
+        [6, 5, 4],
+        [3, 2, 1]
+    ];
+
+    function goToStep2() {
+        currentClass = document.getElementById('class-select').value;
+        currentGroup = document.getElementById('group-select').value;
+
+        if (!currentClass || !currentGroup) {
+            alert("請先選擇班級與組別！");
+            return;
+        }
+
+        document.getElementById('select-modal').style.display = 'none';
+        document.getElementById('input-modal').style.display = 'flex';
+        document.getElementById('modal-group-title').innerText = `${currentClass} 班 - 第 ${currentGroup} 組名單編輯`;
+
+        const container = document.getElementById('member-inputs-container');
+        container.innerHTML = "";
+
+        // 讀取本地暫存資料
+        const storageKey = `class_${currentClass}_group_${currentGroup}`;
+        let members = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
+        if (members && members.length > 0) {
+            members.forEach(item => {
+                let parts = item.split(' ');
+                let no = parts.length > 1 ? parts[0] : '';
+                let name = parts.length > 1 ? parts[1] : parts[0];
+                addMemberInput(no, name);
+            });
+        } else {
+            for (let i = 0; i < 4; i++) {
+                addMemberInput('', '');
+            }
+        }
+    }
+
+    function directViewChart() {
+        currentClass = document.getElementById('class-select').value;
+        if (!currentClass) {
+            alert("請選擇班級！");
+            return;
+        }
+        currentGroup = "";
+        document.getElementById('select-modal').style.display = 'none';
+        document.getElementById('classroom-view').style.display = 'block';
+        document.getElementById('current-class-info').innerText = `${currentClass} 班 座位表 (講臺在下方)`;
+        renderSeatingChart();
+    }
+
+    function addMemberInput(noVal = '', nameVal = '') {
+        const container = document.getElementById('member-inputs-container');
+        const row = document.createElement('div');
+        row.className = 'member-row';
+        row.innerHTML = `
+            <input type="text" placeholder="座號" value="${noVal}" class="member-no" style="width: 30%;">
+            <input type="text" placeholder="姓名" value="${nameVal}" class="member-name" style="width: 55%;">
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove()">✕</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function saveAndGenerate() {
+        const noInputs = document.querySelectorAll('.member-no');
+        const nameInputs = document.querySelectorAll('.member-name');
+        
+        let members = [];
+        for (let i = 0; i < noInputs.length; i++) {
+            const no = noInputs[i].value.trim();
+            const name = nameInputs[i].value.trim();
+            if (name !== "") {
+                members.push(no ? `${no} ${name}` : name);
+            }
+        }
+
+        if (members.length === 0) {
+            alert("請至少輸入一位組員姓名！");
+            return;
+        }
+
+        // 儲存至 localStorage
+        const storageKey = `class_${currentClass}_group_${currentGroup}`;
+        localStorage.setItem(storageKey, JSON.stringify(members));
+
+        document.getElementById('input-modal').style.display = 'none';
+        document.getElementById('classroom-view').style.display = 'block';
+        document.getElementById('current-class-info').innerText = `${currentClass} 班 座位分佈圖`;
+
+        renderSeatingChart();
+    }
+
+    function renderSeatingChart() {
+        const gridContainer = document.getElementById('seating-grid');
+        gridContainer.innerHTML = "";
+
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                const groupNum = gridLayout[r][c];
+                const storageKey = `class_${currentClass}_group_${groupNum}`;
+                let savedMembers = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
+                const card = document.createElement('div');
+                card.className = `group-card ${groupNum == currentGroup ? 'active-group' : ''}`;
+
+                let memberHtml = savedMembers.length > 0 
+                    ? savedMembers.map(m => `<div class="chip">${m}</div>`).join('') 
+                    : '<span style="color:#9ca3af; font-size:13px;">未填寫</span>';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="group-header">
+                            <span>Group ${groupNum}</span>
+                            ${groupNum == currentGroup ? '<span style="font-size:12px; color:#2563eb;">[目前編輯]</span>' : ''}
+                        </div>
+                        <div class="member-chips">
+                            ${memberHtml}
+                        </div>
+                    </div>
+                `;
+                gridContainer.appendChild(card);
+            }
+        }
+    }
+
+    function reopenModal() {
+        document.getElementById('classroom-view').style.display = 'none';
+        document.getElementById('input-modal').style.display = 'none';
+        document.getElementById('select-modal').style.display = 'flex';
+    }
+</script>
+</body>
+</html>
