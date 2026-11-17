@@ -1,0 +1,2621 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>高中地球科學｜科氏力成因與特徵互動實驗室</title>
+  <style>
+    /* ==================== 設計系統與色票定義（現代淺色科學實驗室風格） ==================== */
+    :root {
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --bg-canvas: #ffffff;
+      --border-light: #e2e8f0;
+      --border-medium: #cbd5e1;
+      --text-main: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+
+      --navy-dark: #0f172a;
+      --navy-primary: #1e3a8a;
+      --teal-primary: #0d9488;
+      --teal-light: #ccfbf1;
+      --cyan-primary: #0284c7;
+      --cyan-light: #e0f2fe;
+
+      /* 物理向量專屬標準色 */
+      --vec-velocity: #059669;   /* 實際風向 / 速度：翠綠色 */
+      --vec-coriolis: #2563eb;   /* 科氏力：寶藍色 */
+      --vec-pgf: #dc2626;        /* 氣壓梯度力：朱紅色 */
+      --vec-friction: #d97706;   /* 地面摩擦力 / 氣塊：琥珀橘 */
+
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+      --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.07);
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 7px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.65;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 16px;
+    }
+
+    /* 專用數學公式與符號排版類別（徹底避免外部字體依賴與亂碼） */
+    .math-formula {
+      font-family: "Cambria Math", "Times New Roman", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .math-inline {
+      font-family: "Cambria Math", "Times New Roman", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      font-weight: 700;
+      color: var(--navy-primary);
+      background: #eff6ff;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid #dbeafe;
+      white-space: nowrap;
+    }
+
+    /* ==================== 頂部標題列與雙格式匯出工具 ==================== */
+    header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 65%, #0f766e 100%);
+      color: #ffffff;
+      padding: 16px 24px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    }
+
+    .header-inner {
+      max-width: 1460px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      line-height: 1.3;
+    }
+
+    .brand p {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      margin-top: 2px;
+    }
+
+    .export-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn-export {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 15px;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      transition: all 0.18s ease;
+    }
+
+    .btn-export-html {
+      background: #14b8a6;
+      color: #042f2e;
+      border-color: #2dd4bf;
+    }
+
+    .btn-export-html:hover {
+      background: #2dd4bf;
+      transform: translateY(-1px);
+    }
+
+    .btn-export-txt {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .btn-export-txt:hover {
+      background: rgba(255, 255, 255, 0.24);
+      transform: translateY(-1px);
+    }
+
+    /* ==================== 四大教學分頁導覽列 ==================== */
+    .nav-bar-wrapper {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-medium);
+      padding: 10px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-tabs {
+      max-width: 1460px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab-btn {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      color: var(--text-body);
+      padding: 10px 18px;
+      border-radius: var(--radius-md);
+      font-size: 0.96rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab-btn:hover {
+      border-color: var(--cyan-primary);
+      color: var(--navy-primary);
+      background: var(--cyan-light);
+    }
+
+    .tab-btn.active {
+      background: var(--navy-primary);
+      border-color: var(--navy-primary);
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(30, 58, 138, 0.25);
+    }
+
+    /* ==================== 主內容容器 ==================== */
+    main {
+      flex: 1;
+      max-width: 1460px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px 24px 36px;
+    }
+
+    .tab-panel {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .tab-panel.active {
+      display: flex;
+    }
+
+    /* 實驗室雙欄工作區 */
+    .lab-grid {
+      display: grid;
+      grid-template-columns: 1fr 390px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1120px) {
+      .lab-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      padding: 18px;
+    }
+
+    .dual-canvas-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 780px) {
+      .dual-canvas-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .canvas-frame {
+      border: 1.5px solid var(--border-medium);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--bg-canvas);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .canvas-title-bar {
+      background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border-light);
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--navy-dark);
+    }
+
+    .pill {
+      font-size: 0.8rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .pill-blue { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    .pill-teal { background: #ccfbf1; color: #115e59; border: 1px solid #5eead4; }
+    .pill-amber { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+
+    canvas {
+      width: 100%;
+      height: 410px;
+      display: block;
+      background: #ffffff;
+    }
+
+    canvas.tall-canvas {
+      height: 480px;
+      cursor: crosshair;
+    }
+
+    /* 圖例列 */
+    .legend-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      color: var(--text-body);
+      font-weight: 600;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .swatch-dot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .swatch-line {
+      width: 22px;
+      height: 4px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    /* ==================== 右側控制面板 ==================== */
+    .controls-card {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .panel-heading {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--navy-primary);
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ctrl-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .ctrl-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.93rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .ctrl-val-badge {
+      background: var(--cyan-light);
+      color: var(--navy-primary);
+      padding: 2px 9px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--navy-primary);
+      height: 6px;
+      cursor: pointer;
+    }
+
+    .seg-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .seg-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .opt-btn {
+      padding: 9px 10px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border-medium);
+      background: var(--bg-surface);
+      color: var(--text-body);
+      font-size: 0.89rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .opt-btn:hover {
+      border-color: var(--cyan-primary);
+      background: var(--bg-subtle);
+    }
+
+    .opt-btn.selected {
+      background: var(--navy-primary);
+      border-color: var(--navy-primary);
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(30, 58, 138, 0.25);
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 0.91rem;
+      font-weight: 600;
+      color: var(--text-body);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .check-row input {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--teal-primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .btn-row-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-launch {
+      grid-column: span 2;
+      background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
+      color: #ffffff;
+      border: none;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.98rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.28);
+      transition: transform 0.12s ease, filter 0.15s ease;
+    }
+
+    .btn-launch:hover {
+      filter: brightness(1.05);
+    }
+
+    .btn-launch:active {
+      transform: scale(0.98);
+    }
+
+    .btn-sub {
+      background: var(--bg-subtle);
+      border: 1.5px solid var(--border-medium);
+      color: var(--text-main);
+      padding: 9px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 0.89rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-sub:hover {
+      background: #e2e8f0;
+    }
+
+    /* 公式與即時數據儀表框 */
+    .formula-dashboard {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdfa 100%);
+      border: 1.5px solid #93c5fd;
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .formula-main-display {
+      text-align: center;
+      font-size: 1.38rem;
+      color: var(--navy-primary);
+      padding-bottom: 6px;
+      border-bottom: 1px dashed #93c5fd;
+    }
+
+    .param-breakdown {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+      font-size: 0.86rem;
+      color: var(--text-body);
+    }
+
+    .param-item {
+      background: rgba(255, 255, 255, 0.85);
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1px solid #dbeafe;
+    }
+
+    .readout-panel {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.91rem;
+    }
+
+    .readout-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .meter-track {
+      width: 100%;
+      height: 10px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+
+    .meter-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0d9488, #2563eb);
+      border-radius: 999px;
+      transition: width 0.2s ease;
+    }
+
+    /* ==================== 成因三張結構化原理卡 ==================== */
+    .cards-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 1024px) {
+      .cards-grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .explain-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-top: 5px solid var(--teal-primary);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .explain-card.navy-accent {
+      border-top-color: var(--navy-primary);
+    }
+
+    .explain-card.cyan-accent {
+      border-top-color: var(--cyan-primary);
+    }
+
+    .explain-card h3 {
+      font-size: 1.06rem;
+      font-weight: 800;
+      color: var(--navy-dark);
+      line-height: 1.4;
+    }
+
+    .explain-card p {
+      color: var(--text-body);
+      font-size: 0.94rem;
+    }
+
+    .highlight-box {
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      border-radius: var(--radius-sm);
+      padding: 10px 13px;
+      font-size: 0.9rem;
+      color: #115e59;
+      margin-top: auto;
+    }
+
+    /* 分頁 2：四大特徵互動卡片網格 */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 960px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      transition: border-color 0.2s ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--cyan-primary);
+    }
+
+    .feature-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .feature-num {
+      background: var(--navy-primary);
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .feature-title {
+      font-size: 1.06rem;
+      font-weight: 800;
+      color: var(--navy-dark);
+    }
+
+    .tag-phenomenon {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1e40af;
+      font-weight: 800;
+      font-size: 0.82rem;
+      padding: 2px 8px;
+      border-radius: 5px;
+      margin-right: 6px;
+    }
+
+    .tag-cause {
+      display: inline-block;
+      background: #ccfbf1;
+      color: #115e59;
+      font-weight: 800;
+      font-size: 0.82rem;
+      padding: 2px 8px;
+      border-radius: 5px;
+      margin-right: 6px;
+    }
+
+    .feature-text {
+      font-size: 0.94rem;
+      color: var(--text-body);
+    }
+
+    .btn-demo-apply {
+      align-self: flex-start;
+      background: #eff6ff;
+      color: var(--navy-primary);
+      border: 1.5px solid #93c5fd;
+      padding: 9px 15px;
+      border-radius: var(--radius-sm);
+      font-size: 0.91rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-demo-apply:hover {
+      background: var(--navy-primary);
+      color: #ffffff;
+      border-color: var(--navy-primary);
+    }
+
+    /* 分頁 3：三階段演變卡片 */
+    .stage-card {
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      transition: all 0.2s ease;
+    }
+
+    .stage-card.active-stage {
+      border-color: var(--cyan-primary);
+      background: #f0f9ff;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.12);
+    }
+
+    .stage-badge {
+      display: inline-block;
+      background: var(--navy-primary);
+      color: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 5px;
+      margin-bottom: 8px;
+    }
+
+    /* ==================== 分頁 4：公式符號總表與原理圖解 ==================== */
+    .handout-header {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdfa 100%);
+      border: 1.5px solid #bfdbfe;
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .handout-header h2 {
+      font-size: 1.28rem;
+      font-weight: 800;
+      color: var(--navy-primary);
+    }
+
+    .svg-diagrams-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 960px) {
+      .svg-diagrams-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .svg-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .svg-card h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--navy-dark);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .svg-card svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #f8fafc;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+    }
+
+    .summary-table-wrap {
+      overflow-x: auto;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    th {
+      background: var(--navy-primary);
+      color: #ffffff;
+      text-align: left;
+      padding: 13px 16px;
+      font-weight: 700;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light);
+      color: var(--text-body);
+    }
+
+    tr:nth-child(even) td {
+      background: var(--bg-subtle);
+    }
+
+    /* 匯出提示氣泡（不使用 alert） */
+    .toast-banner {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+      font-size: 0.95rem;
+      font-weight: 700;
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+
+    .toast-banner.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== 頂部標題列與一鍵匯出工具 ==================== -->
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">
+          <!-- 內嵌地球與偏轉箭頭 SVG 圖示 -->
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <circle cx="14" cy="14" r="11" stroke="#5eead4" stroke-width="2.2"/>
+            <ellipse cx="14" cy="14" rx="11" ry="4.5" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="2 2"/>
+            <path d="M14 23 C14 16, 17 11, 21 7" stroke="#fde047" stroke-width="2.4" stroke-linecap="round"/>
+            <polygon points="22,6 17,7 20,11" fill="#fde047"/>
+          </svg>
+        </div>
+        <div>
+          <h1>高中地球科學｜科氏力成因與特徵互動實驗室</h1>
+          <p>雙座標系對照・切線速度差原理・四大特徵探究・高低氣壓大氣環流模擬</p>
+        </div>
+      </div>
+
+      <div class="export-tools">
+        <button class="btn-export btn-export-html" onclick="downloadSource('coriolis_force_simulation.html', 'text/html')">
+          ⬇️ 下載離線網頁 (.html)
+        </button>
+        <button class="btn-export btn-export-txt" onclick="downloadSource('coriolis_force_simulation.txt', 'text/plain')">
+          📄 下載程式碼 (.txt)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 四大教學分頁導覽列 ==================== -->
+  <nav class="nav-bar-wrapper" aria-label="教學分頁導覽">
+    <div class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab1">① 成因解密：雙座標系對照實驗</button>
+      <button class="tab-btn" data-tab="tab2">② 特徵探究：控制變因與四大特徵</button>
+      <button class="tab-btn" data-tab="tab3">③ 地科應用：高低氣壓與風向環流</button>
+      <button class="tab-btn" data-tab="tab4">④ 公式符號總表與原理圖解</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- ====================================================================== -->
+    <!-- 分頁 1：成因解密（雙座標系對照實驗 ＋ 三張結構化原理卡） -->
+    <!-- ====================================================================== -->
+    <section id="tab1" class="tab-panel active">
+      <div class="lab-grid">
+        <!-- 左側雙畫布區 -->
+        <div class="card">
+          <div class="dual-canvas-row">
+            <div class="canvas-frame">
+              <div class="canvas-title-bar">
+                <span>🛰️ 太空慣性座標系（慣性視角）</span>
+                <span class="pill pill-teal">無水平外力：走真實直線</span>
+              </div>
+              <canvas id="t1InertialCanvas"></canvas>
+            </div>
+
+            <div class="canvas-frame">
+              <div class="canvas-title-bar">
+                <span>🧍 地面旋轉座標系（地球觀察者視角）</span>
+                <span class="pill pill-blue">地表觀察：產生彎曲偏轉</span>
+              </div>
+              <canvas id="t1RotatingCanvas"></canvas>
+            </div>
+          </div>
+
+          <div class="legend-strip">
+            <div class="legend-item"><span class="swatch-dot" style="background:#d97706;"></span> 移動氣團（保留出發地向東慣性）</div>
+            <div class="legend-item"><span class="swatch-line" style="background:#0891b2;"></span> 各緯度向東自轉切線速度 (<span class="math-formula"><i>v</i> = &omega;<i>R</i> cos&phi;</span>)</div>
+            <div class="legend-item"><span class="swatch-line" style="background:#059669;"></span> 相對地表速度方向 (<span class="math-formula"><i>v</i></span>)</div>
+            <div class="legend-item"><span class="swatch-line" style="background:#2563eb;"></span> 假想科氏力 (<span class="math-formula"><i>F</i><sub>c</sub></span>，垂直速度)</div>
+          </div>
+        </div>
+
+        <!-- 右側實驗參數控制台 -->
+        <aside class="card controls-card">
+          <div class="panel-heading">
+            <span>⚙️ 雙座標系實驗控制</span>
+            <span class="pill pill-blue" id="t1HemiBadge">北半球</span>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-label-row"><span>半球切換（極點俯視自轉方向）</span></div>
+            <div class="seg-grid-2">
+              <button class="opt-btn selected" id="t1BtnNH" onclick="setT1Hemi(1)">北半球（逆時針自轉）</button>
+              <button class="opt-btn" id="t1BtnSH" onclick="setT1Hemi(-1)">南半球（順時針自轉）</button>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-label-row"><span>發射方向</span></div>
+            <div class="seg-grid-2">
+              <button class="opt-btn selected" id="t1DirNorth" onclick="setT1LaunchDir('north')">&uarr; 向北發射</button>
+              <button class="opt-btn" id="t1DirSouth" onclick="setT1LaunchDir('south')">&darr; 向南發射</button>
+              <button class="opt-btn" id="t1DirEast" onclick="setT1LaunchDir('east')">&rarr; 向東發射</button>
+              <button class="opt-btn" id="t1DirWest" onclick="setT1LaunchDir('west')">&larr; 向西發射</button>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-label-row">
+              <span>氣團發射初速 (<span class="math-formula"><i>v</i></span>)</span>
+              <span class="ctrl-val-badge" id="t1SpeedLabel">115 單位/秒</span>
+            </div>
+            <input type="range" id="t1SpeedSlider" min="70" max="170" step="5" value="115" />
+          </div>
+
+          <label class="check-row">
+            <input type="checkbox" id="t1ShowTangent" checked />
+            <span>顯示各緯度向東自轉切線速度向量 (<span class="math-formula"><i>v</i> = &omega;<i>R</i> cos&phi;</span>)</span>
+          </label>
+
+          <label class="check-row">
+            <input type="checkbox" id="t1SlowMo" />
+            <span>慢動作切換（0.3&times; 速率／取消勾選為 1.0&times; 正常速率）</span>
+          </label>
+
+          <div class="btn-row-actions">
+            <button class="btn-launch" onclick="launchT1()">🚀 發射氣團（同步觀察雙座標系）</button>
+            <button class="btn-sub" id="t1PauseBtn" onclick="toggleT1Pause()">⏯️ 播放 / 暫停</button>
+            <button class="btn-sub" onclick="resetT1()">🔄 重置</button>
+          </div>
+
+          <div class="readout-panel">
+            <div class="readout-item">
+              <span>地表偏轉方向：</span>
+              <strong id="t1DeflectReadout" style="color: var(--vec-coriolis);">面向前進方向之「右側」</strong>
+            </div>
+            <div class="readout-item">
+              <span>當前運動物理機制：</span>
+              <strong id="t1TangentialNote" style="color: var(--teal-primary);">低緯&rarr;高緯：切線速度較快而向東超前</strong>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- 成因深度解析區（三張結構化原理卡） -->
+      <div class="cards-grid-3">
+        <!-- 卡片 1 -->
+        <article class="explain-card navy-accent">
+          <h3>卡片 1【核心本質：非慣性座標系的假想力】</h3>
+          <p>
+            地球持續自轉，使地表成為一個旋轉的<strong>非慣性座標系</strong>。科氏力（Coriolis Force）<strong>並非真實的接觸力或超距力</strong>（不像重力來自地球質量吸引、氣壓梯度力來自氣壓差）。
+          </p>
+          <p>
+            從<strong>太空慣性座標系（左圖）</strong>看，物體不受水平外力時依牛頓第一運動定律走<strong>真實直線</strong>；但地表觀察者隨地球旋轉，為在旋轉座標系中繼續套用牛頓運動定律解釋物體相對於地表的偏移，便引入這個慣性力（假想力）。
+          </p>
+          <div class="highlight-box">
+            💡 <strong>關鍵口訣：</strong>太空中走直線，旋轉地表看偏轉。
+          </div>
+        </article>
+
+        <!-- 卡片 2 -->
+        <article class="explain-card">
+          <h3>卡片 2【南北向運動偏轉成因：緯度切線速度差】</h3>
+          <p>
+            各緯度自轉角速度 <span class="math-inline">&omega;</span> 相同，但緯度圈半徑為 <span class="math-inline"><i>R</i> cos&phi;</span>，故向東自轉切線速度 <span class="math-inline"><i>v</i> = &omega;<i>R</i> cos&phi;</span> 隨緯度升高而遞減（赤道約 <strong>465 m/s</strong>、60&deg; 約 <strong>232 m/s</strong>、極點為 <strong>0 m/s</strong>）。
+          </p>
+          <p>
+            • <strong>低緯&rarr;高緯（北半球向北）：</strong>氣團保留出發地較快的向東慣性速度，進入自轉較慢的高緯區時<strong>向東超前</strong>地表，面向北方看即<strong>向右偏</strong>。<br/>
+            • <strong>高緯&rarr;低緯（北半球向南）：</strong>氣團保留較慢的向東速度，進入自轉較快的低緯區時<strong>向西落後</strong>地表，面向南方看同樣<strong>向右偏</strong>。
+          </p>
+        </article>
+
+        <!-- 卡片 3 -->
+        <article class="explain-card cyan-accent">
+          <h3>卡片 3【東西向運動偏轉成因：角速度與離心慣性變化】</h3>
+          <p>
+            當氣團沿同一條緯線向東或向西運動時，雖未立即跨緯度，但相對於地軸的<strong>總轉動角速度</strong>發生改變，使慣性離心力與重力的水平平衡被打破：
+          </p>
+          <p>
+            • <strong>向東運動：</strong>物體向東速度疊加地球自轉，相對於地軸轉速大於地球自轉，慣性離心趨勢增強而向<strong>赤道（低緯）</strong>偏離（在北半球即為<strong>向右偏</strong>）。<br/>
+            • <strong>向西運動：</strong>物體抵消部分地球向東自轉，相對於地軸轉速小於地球自轉，慣性離心趨勢減弱而向<strong>極地（高緯）</strong>偏離（在北半球同樣為<strong>向右偏</strong>）。
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ====================================================================== -->
+    <!-- 分頁 2：特徵探究（控制變因模擬與特徵成因解析） -->
+    <!-- ====================================================================== -->
+    <section id="tab2" class="tab-panel">
+      <div class="lab-grid">
+        <!-- 左側模擬畫布 -->
+        <div class="card">
+          <div class="canvas-frame">
+            <div class="canvas-title-bar">
+              <span>🧭 控制變因實驗台（可點擊畫布任意位置直接釋放氣塊）</span>
+              <span class="pill pill-teal" id="t2BadgeStatus">北半球｜北緯 23.5&deg;（台灣）</span>
+            </div>
+            <canvas id="t2MainCanvas" class="tall-canvas"></canvas>
+          </div>
+
+          <div class="legend-strip">
+            <div class="legend-item"><span class="swatch-line" style="background:#059669;"></span> 氣塊風速向量 (<span class="math-formula"><i>v</i></span>，長度不變)</div>
+            <div class="legend-item"><span class="swatch-line" style="background:#2563eb;"></span> 科氏力向量 (<span class="math-formula"><i>F</i><sub>c</sub> &perp; <i>v</i></span>)</div>
+            <div class="legend-item"><span class="swatch-line" style="background:#2563eb;"></span> 目前實驗軌跡</div>
+            <div class="legend-item"><span class="swatch-line" style="background:#94a3b8; border-top:2px dashed #64748b;"></span> 上一條保留軌跡（虛線對照）</div>
+          </div>
+        </div>
+
+        <!-- 右側控制面板與即時公式儀表板 -->
+        <aside class="card controls-card">
+          <div class="panel-heading">
+            <span>🧪 控制變因與公式儀表板</span>
+            <span class="pill pill-blue" id="t2SideHemi">北半球</span>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-label-row"><span>半球選擇</span></div>
+            <div class="seg-grid-2">
+              <button class="opt-btn selected" id="t2BtnNH" onclick="setT2Hemi(1)">北半球（向右偏）</button>
+              <button class="opt-btn" id="t2BtnSH" onclick="setT2Hemi(-1)">南半球（向左偏）</button>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-label-row">
+              <span>緯度滑桿 <span class="math-formula">&phi;</span>（0&deg; 赤道 ～ 90&deg; 極地）</span>
+              <span class="ctrl-val-badge" id="t2LatText">23.5&deg; N</span>
+            </div>
+            <input type="range" id="t2LatSlider" min="0" max="90" step="0.5" value="23.5" />
+            <div class="seg-grid-3" style="margin-top:4px;">
+              <button class="opt-btn" onclick="setT2Lat(0)">0&deg; 赤道</button>
+              <button class="opt-btn" onclick="setT2Lat(23.5)">23.5&deg; 台灣</button>
+              <button class="opt-btn" onclick="setT2Lat(45)">45&deg; 中緯</button>
+              <button class="opt-btn" onclick="setT2Lat(60)">60&deg; 高緯</button>
+              <button class="opt-btn" onclick="setT2Lat(75)">75&deg; 極圈</button>
+              <button class="opt-btn" onclick="setT2Lat(90)">90&deg; 極地</button>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-label-row">
+              <span>風速／物體速率滑桿 <span class="math-formula"><i>v</i></span>（5 ～ 50 m/s）</span>
+              <span class="ctrl-val-badge" id="t2SpeedText">22 m/s</span>
+            </div>
+            <input type="range" id="t2SpeedSlider" min="5" max="50" step="1" value="22" />
+          </div>
+
+          <label class="check-row">
+            <input type="checkbox" id="t2KeepGhost" checked />
+            <span>保留上一條軌跡（虛線對照）</span>
+          </label>
+
+          <div class="btn-row-actions">
+            <button class="btn-launch" onclick="launchT2()">🚀 發射模擬</button>
+            <button class="btn-sub" onclick="toggleT2Pause()">⏯️ 播放 / 暫停</button>
+            <button class="btn-sub" onclick="clearT2Trails()">🗑️ 清除軌跡</button>
+          </div>
+
+          <!-- 即時公式與數值儀表板 -->
+          <div class="formula-dashboard">
+            <div class="formula-main-display math-formula">
+              <i>a</i><sub>c</sub> = 2&omega;<i>v</i> sin&phi;
+            </div>
+            <div class="param-breakdown">
+              <div class="param-item">地球自轉角速度 <span class="math-formula">&omega;</span>：<br/><strong>7.29 &times; 10<sup>&minus;5</sup> rad/s</strong></div>
+              <div class="param-item">當前風速 <span class="math-formula"><i>v</i></span>：<br/><strong id="t2ParamV">22 m/s</strong></div>
+              <div class="param-item">當前緯度 <span class="math-formula">&phi;</span>：<br/><strong id="t2ParamPhi">23.5&deg;</strong></div>
+              <div class="param-item">正弦因子 <span class="math-formula">sin&phi;</span>：<br/><strong id="t2ParamSin">0.399</strong></div>
+            </div>
+            <div class="readout-item" style="padding-top:4px; border-top:1px solid #bfdbfe;">
+              <span>當前科氏加速度 <span class="math-formula"><i>a</i><sub>c</sub></span>：</span>
+              <strong id="t2AcValue" style="color: var(--vec-coriolis); font-size:1.05rem;">1.28 &times; 10<sup>&minus;3</sup> m/s<sup>2</sup></strong>
+            </div>
+            <div>
+              <div class="readout-item">
+                <span>偏轉強度指標（相對極點 50 m/s）：</span>
+                <strong id="t2StrengthLabel" style="color: var(--teal-primary);">18%</strong>
+              </div>
+              <div class="meter-track">
+                <div class="meter-fill" id="t2StrengthBar" style="width: 18%;"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- 四大特徵與成因說明卡片 -->
+      <div class="features-grid">
+        <!-- 特徵一 -->
+        <article class="feature-card">
+          <div>
+            <div class="feature-header">
+              <span class="feature-num">特徵一</span>
+              <h3 class="feature-title">北半球向右偏、南半球向左偏</h3>
+            </div>
+            <p class="feature-text" style="margin-top:10px;">
+              <span class="tag-phenomenon">特徵現象</span>在北半球，物體相對於地表一律向<strong>運動前進方向的右側</strong>偏轉；在南半球則一律向<strong>左側</strong>偏轉。
+            </p>
+            <p class="feature-text" style="margin-top:8px;">
+              <span class="tag-cause">為什麼會這樣？（成因說明）</span>從北極上空俯視地球呈<strong>逆時針</strong>旋轉、從南極上空俯視則呈<strong>順時針</strong>旋轉。兩個半球旋轉參考系的轉向完全相反，導致走慣性直線的物體相對於旋轉地表的偏轉方向呈鏡像對稱。
+            </p>
+          </div>
+          <button class="btn-demo-apply" onclick="demoFeature1()">▶️ 一鍵套用示範參數（切換南北半球對比）</button>
+        </article>
+
+        <!-- 特徵二 -->
+        <article class="feature-card">
+          <div>
+            <div class="feature-header">
+              <span class="feature-num">特徵二</span>
+              <h3 class="feature-title">緯度愈高科氏力愈大，赤道為零</h3>
+            </div>
+            <p class="feature-text" style="margin-top:10px;">
+              <span class="tag-phenomenon">特徵現象</span>相同風速下，<strong>赤道（0&deg;）科氏力為零</strong>（氣流不偏轉）；隨緯度升高偏轉愈顯著，至<strong>極地（90&deg;）達到最大值</strong>。
+            </p>
+            <p class="feature-text" style="margin-top:8px;">
+              <span class="tag-cause">為什麼會這樣？（成因說明）</span>水平方向上的科氏力取決於地球自轉角速度向量 <span class="math-inline">&omega;</span> 在當地垂直地表方向的分量 <span class="math-inline">&omega; sin&phi;</span>。赤道（<span class="math-inline">&phi; = 0&deg;</span>）時當地水平面與地軸平行，<span class="math-inline">sin 0&deg; = 0</span> 故無水平偏轉；極地（<span class="math-inline">&phi; = 90&deg;</span>）時地軸垂直於地面，<span class="math-inline">sin 90&deg; = 1</span> 偏轉效應最大。
+            </p>
+          </div>
+          <button class="btn-demo-apply" onclick="demoFeature2()">▶️ 一鍵套用示範參數（赤道 0&deg; vs 高緯 60&deg;）</button>
+        </article>
+
+        <!-- 特徵三 -->
+        <article class="feature-card">
+          <div>
+            <div class="feature-header">
+              <span class="feature-num">特徵三</span>
+              <h3 class="feature-title">風速（物體速率）愈快，科氏力愈大</h3>
+            </div>
+            <p class="feature-text" style="margin-top:10px;">
+              <span class="tag-phenomenon">特徵現象</span>在同一緯度下，氣流或物體移動的速率 <span class="math-inline"><i>v</i></span> 愈快，科氏力愈強；<strong>靜止物體（<span class="math-inline"><i>v</i> = 0</span>）不受科氏力</strong>。
+            </p>
+            <p class="feature-text" style="margin-top:8px;">
+              <span class="tag-cause">為什麼會這樣？（成因說明）</span>由 <span class="math-inline"><i>a</i><sub>c</sub> = 2&omega;<i>v</i> sin&phi;</span> 可知科氏加速度與速率 <span class="math-inline"><i>v</i></span> 成正比。物體移動愈快，單位時間內跨越的緯度差愈大、與旋轉地表的相對速度變化累積愈快，故偏轉力愈強；若物體相對於地表靜止（<span class="math-inline"><i>v</i> = 0</span>），則無相對位移變化，科氏力為零。
+            </p>
+          </div>
+          <button class="btn-demo-apply" onclick="demoFeature3()">▶️ 一鍵套用示範參數（低速 12 m/s vs 高速 44 m/s）</button>
+        </article>
+
+        <!-- 特徵四 -->
+        <article class="feature-card">
+          <div>
+            <div class="feature-header">
+              <span class="feature-num">特徵四</span>
+              <h3 class="feature-title">只改變運動方向，不改變運動速率</h3>
+            </div>
+            <p class="feature-text" style="margin-top:10px;">
+              <span class="tag-phenomenon">特徵現象</span>純粹受科氏力作用時，氣塊運動方向持續轉彎，但<strong>移動速率（綠色箭頭長度）始終保持不變</strong>。
+            </p>
+            <p class="feature-text" style="margin-top:8px;">
+              <span class="tag-cause">為什麼會這樣？（成因說明）</span>科氏力方向恆與物體瞬時運動方向垂直（<span class="math-inline"><i>F</i><sub>c</sub> &perp; <i>v</i></span>），對物體不做功（<span class="math-inline"><i>W</i> = 0</span>），因此無法增加或減少物體的動能，僅能提供法向加速度改變前進方向。
+            </p>
+          </div>
+          <button class="btn-demo-apply" onclick="demoFeature4()">▶️ 一鍵套用示範參數（觀察等速率圓周偏轉）</button>
+        </article>
+      </div>
+    </section>
+
+    <!-- ====================================================================== -->
+    <!-- 分頁 3：地科應用（高低氣壓與風向環流模擬） -->
+    <!-- ====================================================================== -->
+    <section id="tab3" class="tab-panel">
+      <div class="lab-grid">
+        <!-- 左側氣壓系統畫布 -->
+        <div class="card">
+          <div class="canvas-frame">
+            <div class="canvas-title-bar">
+              <span>🌀 等壓線與大氣環流動力模擬（觀察氣塊從靜止到受力平衡的演變）</span>
+              <span class="pill pill-amber" id="t3HeaderBadge">北半球｜低氣壓 (L)｜近地面大氣</span>
+            </div>
+            <canvas id="t3MainCanvas" class="tall-canvas"></canvas>
+          </div>
+
+          <div class="legend-strip">
+            <div class="legend-item"><span class="swatch-line" style="background:#dc2626;"></span> 氣壓梯度力 (PGF，高壓&rarr;低壓)</div>
+            <div class="legend-item"><span class="swatch-line" style="background:#2563eb;"></span> 科氏力 (CF，隨風速增強)</div>
+            <div class="legend-item"><span class="swatch-line" style="background:#d97706;"></span> 地面摩擦力 (<span class="math-formula"><i>F</i><sub>f</sub></span>，與風向相反)</div>
+            <div class="legend-item"><span class="swatch-line" style="background:#059669;"></span> 實際風向 (Wind)</div>
+          </div>
+        </div>
+
+        <!-- 右側大氣環境控制台 -->
+        <aside class="card controls-card">
+          <div class="panel-heading">
+            <span>🌦️ 天氣系統環境控制</span>
+            <span class="pill pill-teal" id="t3ModeTag">三力平衡（斜穿等壓線）</span>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-label-row"><span>所在半球</span></div>
+            <div class="seg-grid-2">
+              <button class="opt-btn selected" id="t3BtnNH" onclick="setT3Hemi(1)">北半球</button>
+              <button class="opt-btn" id="t3BtnSH" onclick="setT3Hemi(-1)">南半球</button>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-label-row"><span>氣壓中心類型</span></div>
+            <div class="seg-grid-2">
+              <button class="opt-btn selected" id="t3BtnLow" onclick="setT3Pressure('L')">低氣壓 (L)</button>
+              <button class="opt-btn" id="t3BtnHigh" onclick="setT3Pressure('H')">高氣壓 (H)</button>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-label-row"><span>大氣高度層（摩擦力有無）</span></div>
+            <div class="seg-grid-2">
+              <button class="opt-btn selected" id="t3BtnSurface" onclick="setT3Alt('surface')">近地面大氣（有摩擦力）</button>
+              <button class="opt-btn" id="t3BtnUpper" onclick="setT3Alt('upper')">高空大氣（無摩擦力&rarr;地轉風）</button>
+            </div>
+          </div>
+
+          <label class="check-row">
+            <input type="checkbox" id="t3ShowStreamlines" checked />
+            <span>顯示完整背景風場流線（8 個方位氣塊同步環流）</span>
+          </label>
+
+          <label class="check-row">
+            <input type="checkbox" id="t3ShowVectors" checked />
+            <span>顯示焦點氣塊的即時受力向量箭頭 (PGF / CF / <span class="math-formula"><i>F</i><sub>f</sub></span>)</span>
+          </label>
+
+          <div class="btn-row-actions">
+            <button class="btn-launch" onclick="spawnT3Parcels()">🌬️ 釋放氣塊觀察受力演變</button>
+            <button class="btn-sub" onclick="toggleT3Pause()">⏯️ 播放 / 暫停</button>
+            <button class="btn-sub" onclick="resetFocusParcel()">🎯 單顆氣塊慢速觀察</button>
+          </div>
+
+          <div class="readout-panel">
+            <div class="readout-item">
+              <span>環流旋轉方向：</span>
+              <strong id="t3SpinReadout" style="color: var(--navy-primary);">逆時針向內旋入（輻合）</strong>
+            </div>
+            <div class="readout-item">
+              <span>風向與等壓線夾角：</span>
+              <strong id="t3AngleReadout" style="color: var(--vec-velocity);">斜穿等壓線（約 30&deg;）</strong>
+            </div>
+            <div class="readout-item">
+              <span>力平衡關係：</span>
+              <strong id="t3BalanceReadout" style="color: var(--vec-pgf);">PGF &gt; CF（因摩擦減速）</strong>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- 氣塊演變三階段教學解析 -->
+      <div class="cards-grid-3">
+        <div class="stage-card active-stage" id="stageCard1">
+          <span class="stage-badge">階段 ① 靜止啟動</span>
+          <h4 style="font-weight:800; color:var(--navy-dark); margin-bottom:6px;">僅受氣壓梯度力由高壓指向低壓</h4>
+          <p style="font-size:0.93rem; color:var(--text-body);">
+            氣塊剛從靜止釋放瞬間，速率 <span class="math-inline"><i>v</i> = 0</span>，因此<strong>科氏力與摩擦力皆為零</strong>。空氣僅受<strong>氣壓梯度力（PGF，紅色箭頭）</strong>驅動，垂直等壓線從高壓往低壓方向啟動加速。
+          </p>
+        </div>
+
+        <div class="stage-card active-stage" id="stageCard2">
+          <span class="stage-badge">階段 ② 加速偏轉</span>
+          <h4 style="font-weight:800; color:var(--navy-dark); margin-bottom:6px;">風速增加使科氏力同步增強並偏轉</h4>
+          <p style="font-size:0.93rem; color:var(--text-body);">
+            氣塊移動後有了風速 <span class="math-inline"><i>v</i></span>，<strong>科氏力（CF，藍色箭頭）</strong>隨即產生並隨風速加快而變長，持續將氣塊拉向運動方向的<strong>右側（北半球）</strong>或<strong>左側（南半球）</strong>。
+          </p>
+        </div>
+
+        <div class="stage-card active-stage" id="stageCard3">
+          <span class="stage-badge">階段 ③ 達成平衡</span>
+          <h4 style="font-weight:800; color:var(--navy-dark); margin-bottom:6px;" id="stage3Title">近地面三力平衡：形成氣旋／反氣旋螺旋</h4>
+          <p style="font-size:0.93rem; color:var(--text-body);" id="stage3Desc">
+            <strong>近地面大氣</strong>受地表<strong>摩擦力（<span class="math-inline"><i>F</i><sub>f</sub></span>，橘色）</strong>阻礙使風速減慢，導致科氏力變小（<span class="math-inline">PGF &gt; CF</span>），氣壓梯度力略佔優勢，使風向<strong>斜穿等壓線</strong>向低壓中心輻合旋入（或自高壓中心輻散旋出）。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================== -->
+    <!-- 分頁 4：公式符號總表與原理圖解 -->
+    <!-- ====================================================================== -->
+    <section id="tab4" class="tab-panel">
+      <div class="handout-header">
+        <div>
+          <h2>📖 高中地球科學教師講義：公式符號總表與原理圖解</h2>
+          <p style="color: var(--text-body); font-size: 0.94rem; margin-top: 4px;">
+            本頁以標準 HTML 數學排版與高解析向量 SVG 繪製核心原理圖解，無外部字體依賴，適合直接搭配單槍投影教學。
+          </p>
+        </div>
+        <span class="pill pill-blue" style="font-size: 0.9rem; padding: 6px 14px;">完整公式符號對照版</span>
+      </div>
+
+      <!-- 一、公式與符號完整對照表 -->
+      <div class="summary-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 14%;">物理符號</th>
+              <th style="width: 24%;">物理量名稱</th>
+              <th style="width: 20%;">標準單位</th>
+              <th style="width: 42%;">地球科學物理意義與關係式</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="math-formula" style="font-size:1.15rem; color:var(--navy-primary);">&omega;</td>
+              <td><strong>地球自轉角速度</strong></td>
+              <td class="math-formula">rad/s</td>
+              <td>地球每 23 時 56 分 4 秒自轉 2&pi; 弧度，約為 <span class="math-formula">7.29 &times; 10<sup>&minus;5</sup> rad/s</span>（各緯度皆相同）。</td>
+            </tr>
+            <tr>
+              <td class="math-formula" style="font-size:1.15rem; color:var(--navy-primary);">&phi;</td>
+              <td><strong>地理緯度</strong></td>
+              <td class="math-formula">度 (&deg;)</td>
+              <td>赤道為 <span class="math-formula">0&deg;</span>，南北兩極為 <span class="math-formula">90&deg;</span>；決定當地水平面旋轉分量 <span class="math-formula">&omega; sin&phi;</span>。</td>
+            </tr>
+            <tr>
+              <td class="math-formula" style="font-size:1.15rem; color:var(--navy-primary);"><i>v</i></td>
+              <td><strong>物體移動速率／風速</strong></td>
+              <td class="math-formula">m/s</td>
+              <td>相對於地表的水平移動快慢；不同緯度地表向東切線速度為 <span class="math-formula"><i>v</i> = &omega;<i>R</i> cos&phi;</span>。</td>
+            </tr>
+            <tr>
+              <td class="math-formula" style="font-size:1.15rem; color:var(--navy-primary);"><i>R</i></td>
+              <td><strong>地球平均半徑</strong></td>
+              <td class="math-formula">m 或 km</td>
+              <td>約 <span class="math-formula">6,371 km</span>；緯度 <span class="math-formula">&phi;</span> 處的緯度圈旋轉半徑為 <span class="math-formula"><i>R</i> cos&phi;</span>。</td>
+            </tr>
+            <tr>
+              <td class="math-formula" style="font-size:1.15rem; color:var(--vec-coriolis);"><i>a</i><sub>c</sub></td>
+              <td><strong>科氏加速度</strong></td>
+              <td class="math-formula">m/s<sup>2</sup></td>
+              <td>公式：<span class="math-formula"><i>a</i><sub>c</sub> = 2&omega;<i>v</i> sin&phi;</span>，代表單位質量空氣所受的水平偏轉加速度。</td>
+            </tr>
+            <tr>
+              <td class="math-formula" style="font-size:1.15rem; color:var(--vec-coriolis);"><i>F</i><sub>c</sub></td>
+              <td><strong>科氏力（假想力）</strong></td>
+              <td class="math-formula">N（牛頓）</td>
+              <td>公式：<span class="math-formula"><i>F</i><sub>c</sub> = <i>m a</i><sub>c</sub> = 2<i>m</i>&omega;<i>v</i> sin&phi;</span>，方向恆垂直於速度（<span class="math-formula"><i>F</i><sub>c</sub> &perp; <i>v</i></span>）。</td>
+            </tr>
+            <tr>
+              <td class="math-formula" style="font-size:1.15rem; color:var(--vec-pgf);">PGF</td>
+              <td><strong>氣壓梯度力</strong></td>
+              <td class="math-formula">N 或 m/s<sup>2</sup></td>
+              <td>驅動空氣流動的原始動力，方向垂直等壓線由<strong>高氣壓指向低氣壓</strong>。</td>
+            </tr>
+            <tr>
+              <td class="math-formula" style="font-size:1.15rem; color:var(--vec-friction);"><i>F</i><sub>f</sub></td>
+              <td><strong>地面摩擦力</strong></td>
+              <td class="math-formula">N 或 m/s<sup>2</sup></td>
+              <td>僅存在於近地面大氣，方向與風向完全相反，減慢風速並間接削弱科氏力。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 二、高解析內嵌 SVG 教學原理圖（兩張並排） -->
+      <div class="svg-diagrams-grid">
+        <!-- 圖 A -->
+        <div class="svg-card">
+          <h3>圖 A：不同緯度地球自轉切線速度差異與南北向運動偏轉示意圖</h3>
+          <svg viewBox="0 0 560 345" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrowCyan" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                <path d="M0,1 L7,4 L0,7 Z" fill="#0284c7"/>
+              </marker>
+              <marker id="arrowAmber" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                <path d="M0,1 L7,4 L0,7 Z" fill="#d97706"/>
+              </marker>
+              <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                <path d="M0,1 L7,4 L0,7 Z" fill="#dc2626"/>
+              </marker>
+            </defs>
+
+            <!-- 地軸 -->
+            <line x1="205" y1="22" x2="205" y2="322" stroke="#475569" stroke-width="2" stroke-dasharray="6 4"/>
+            <text x="205" y="15" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">北極 N (90&#176;N)</text>
+            <text x="205" y="338" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">南極 S (90&#176;S)</text>
+
+            <!-- 地球圓盤 -->
+            <circle cx="205" cy="172" r="124" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5"/>
+
+            <!-- 赤道 0° -->
+            <line x1="81" y1="172" x2="329" y2="172" stroke="#0369a1" stroke-width="2"/>
+            <text x="42" y="176" font-size="12" font-weight="bold" fill="#0369a1">赤道 0&#176;</text>
+
+            <!-- 北緯 30° -->
+            <line x1="98" y1="110" x2="312" y2="110" stroke="#64748b" stroke-width="1.4" stroke-dasharray="4 3"/>
+            <text x="40" y="114" font-size="12" font-weight="bold" fill="#334155">30&#176;N</text>
+
+            <!-- 北緯 60° -->
+            <line x1="143" y1="65" x2="267" y2="65" stroke="#64748b" stroke-width="1.4" stroke-dasharray="4 3"/>
+            <text x="84" y="69" font-size="12" font-weight="bold" fill="#334155">60&#176;N</text>
+
+            <!-- 各緯度向東切線速度箭頭 v = ωR cosφ -->
+            <!-- 赤道 465 m/s -->
+            <line x1="329" y1="172" x2="465" y2="172" stroke="#0284c7" stroke-width="4" marker-end="url(#arrowCyan)"/>
+            <text x="472" y="169" font-size="12" font-weight="bold" fill="#0369a1">465 m/s</text>
+            <text x="472" y="185" font-size="11" fill="#475569">(v = &#969;R cos0&#176;)</text>
+
+            <!-- 30°N 403 m/s -->
+            <line x1="312" y1="110" x2="428" y2="110" stroke="#0284c7" stroke-width="3.5" marker-end="url(#arrowCyan)"/>
+            <text x="435" y="114" font-size="12" font-weight="bold" fill="#0369a1">403 m/s</text>
+
+            <!-- 60°N 232 m/s -->
+            <line x1="267" y1="65" x2="336" y2="65" stroke="#0284c7" stroke-width="3" marker-end="url(#arrowCyan)"/>
+            <text x="344" y="69" font-size="12" font-weight="bold" fill="#0369a1">232 m/s</text>
+
+            <!-- 極點 0 m/s -->
+            <circle cx="205" cy="48" r="4.5" fill="#0284c7"/>
+            <text x="216" y="45" font-size="12" font-weight="bold" fill="#0369a1">0 m/s</text>
+
+            <!-- 低緯向高緯偏轉軌跡 -->
+            <path d="M 222 168 Q 235 138 258 115" fill="none" stroke="#d97706" stroke-width="3" marker-end="url(#arrowAmber)"/>
+            <rect x="262" y="123" width="174" height="36" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="349" y="138" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">低緯&#8594;高緯：保留較快東速</text>
+            <text x="349" y="153" text-anchor="middle" font-size="11" font-weight="bold" fill="#b45309">向東超前（面向北向右偏）</text>
+
+            <!-- 高緯向低緯偏轉軌跡 -->
+            <path d="M 180 115 Q 173 142 155 166" fill="none" stroke="#dc2626" stroke-width="3" marker-end="url(#arrowRed)"/>
+            <rect x="12" y="188" width="174" height="36" rx="6" fill="#fee2e2" stroke="#ef4444"/>
+            <text x="99" y="203" text-anchor="middle" font-size="11" font-weight="bold" fill="#991b1b">高緯&#8594;低緯：保留較慢東速</text>
+            <text x="99" y="218" text-anchor="middle" font-size="11" font-weight="bold" fill="#b91c1c">向西落後（面向南向右偏）</text>
+          </svg>
+        </div>
+
+        <!-- 圖 B -->
+        <div class="svg-card">
+          <h3>圖 B：地球自轉角速度在當地垂直方向的投影分量 &#969; sin&#966; 幾何原理圖</h3>
+          <svg viewBox="0 0 560 345" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrowNavy" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                <path d="M0,1 L7,4 L0,7 Z" fill="#1e3a8a"/>
+              </marker>
+              <marker id="arrowTeal" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                <path d="M0,1 L7,4 L0,7 Z" fill="#0d9488"/>
+              </marker>
+            </defs>
+
+            <!-- 地球與地軸 -->
+            <circle cx="195" cy="188" r="120" fill="#f0fdfa" stroke="#0d9488" stroke-width="2.2"/>
+            <line x1="195" y1="26" x2="195" y2="326" stroke="#1e3a8a" stroke-width="2.2"/>
+
+            <!-- 總自轉角速度向量 ω -->
+            <line x1="195" y1="68" x2="195" y2="24" stroke="#1e3a8a" stroke-width="4" marker-end="url(#arrowNavy)"/>
+            <text x="206" y="36" font-size="13" font-weight="bold" fill="#1e3a8a">地球自轉角速度 &#969;</text>
+
+            <!-- 赤道線 -->
+            <line x1="75" y1="188" x2="315" y2="188" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <text x="84" y="181" font-size="12" font-weight="bold" fill="#475569">赤道 &#966; = 0&#176;</text>
+
+            <!-- 緯度 φ 位置點 P -->
+            <line x1="195" y1="188" x2="287" y2="111" stroke="#0f172a" stroke-width="1.8"/>
+            <path d="M 230 188 A 35 35 0 0 0 222 165" fill="none" stroke="#0f172a" stroke-width="1.8"/>
+            <text x="237" y="178" font-size="13" font-weight="bold" fill="#0f172a">&#966;</text>
+
+            <!-- 當地水平切面線 -->
+            <line x1="242" y1="57" x2="332" y2="165" stroke="#94a3b8" stroke-width="2"/>
+            <text x="336" y="168" font-size="11" font-weight="bold" fill="#475569">當地水平面</text>
+
+            <!-- 平行的總 ω 向量 -->
+            <line x1="287" y1="111" x2="287" y2="35" stroke="#1e3a8a" stroke-width="3" stroke-dasharray="4 2" marker-end="url(#arrowNavy)"/>
+            <text x="275" y="28" font-size="12" font-weight="bold" fill="#1e3a8a">&#969;</text>
+
+            <!-- 當地垂直地表方向分量 ω sinφ -->
+            <line x1="287" y1="111" x2="336" y2="70" stroke="#0d9488" stroke-width="4" marker-end="url(#arrowTeal)"/>
+            <line x1="287" y1="35" x2="336" y2="70" stroke="#64748b" stroke-width="1.3" stroke-dasharray="3 3"/>
+
+            <rect x="344" y="46" width="204" height="58" rx="8" fill="#ccfbf1" stroke="#0d9488"/>
+            <text x="446" y="65" text-anchor="middle" font-size="12" font-weight="bold" fill="#115e59">當地垂直分量 = &#969; sin&#966;</text>
+            <text x="446" y="82" text-anchor="middle" font-size="11" fill="#134e4a">決定水平面原地旋轉快慢</text>
+            <text x="446" y="97" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f766e">&#8594; 產生水平科氏力偏轉</text>
+
+            <!-- 極端值對照框 -->
+            <rect x="325" y="212" width="222" height="108" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+            <text x="436" y="234" text-anchor="middle" font-size="12" font-weight="bold" fill="#1e3a8a">赤道與兩極的極端對照</text>
+            <text x="337" y="257" font-size="11.5" fill="#1e293b">&#8226; 赤道 (&#966; = 0&#176;)：sin 0&#176; = 0</text>
+            <text x="347" y="273" font-size="11" fill="#475569">水平面不原地旋轉 &#8594; 科氏力 = 0</text>
+            <text x="337" y="293" font-size="11.5" fill="#1e293b">&#8226; 兩極 (&#966; = 90&#176;)：sin 90&#176; = 1</text>
+            <text x="347" y="309" font-size="11" fill="#475569">地軸垂直地表 &#8594; 科氏力最大</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 三、南北半球高、低氣壓環流特徵總整理表 -->
+      <div class="summary-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 18%;">天氣系統與半球</th>
+              <th style="width: 22%;">高空風向（地轉風）</th>
+              <th style="width: 24%;">地面風向（受摩擦力）</th>
+              <th style="width: 16%;">旋轉方向</th>
+              <th style="width: 20%;">垂直氣流與天氣特徵</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>北半球低氣壓 (L)</strong></td>
+              <td>逆時針平行等壓線<br/>（背風而立低壓在左）</td>
+              <td><strong>逆時針向中心旋入</strong><br/>（斜穿等壓線）</td>
+              <td><strong>逆時針</strong></td>
+              <td>中心輻合<strong>上升</strong><br/>易成雲致雨（陰雨）</td>
+            </tr>
+            <tr>
+              <td><strong>北半球高氣壓 (H)</strong></td>
+              <td>順時針平行等壓線<br/>（背風而立高壓在右）</td>
+              <td><strong>順時針向外圍旋出</strong><br/>（斜穿等壓線）</td>
+              <td><strong>順時針</strong></td>
+              <td>中心輻散<strong>下沉</strong><br/>天氣晴朗乾燥穩定</td>
+            </tr>
+            <tr>
+              <td><strong>南半球低氣壓 (L)</strong></td>
+              <td>順時針平行等壓線<br/>（背風而立低壓在右）</td>
+              <td><strong>順時針向中心旋入</strong><br/>（斜穿等壓線）</td>
+              <td><strong>順時針</strong></td>
+              <td>中心輻合<strong>上升</strong><br/>易成雲致雨（陰雨）</td>
+            </tr>
+            <tr>
+              <td><strong>南半球高氣壓 (H)</strong></td>
+              <td>逆時針平行等壓線<br/>（背風而立高壓在左）</td>
+              <td><strong>逆時針向外圍旋出</strong><br/>（斜穿等壓線）</td>
+              <td><strong>逆時針</strong></td>
+              <td>中心輻散<strong>下沉</strong><br/>天氣晴朗乾燥穩定</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- 匯出提示氣泡（不使用 alert） -->
+  <div id="toastBanner" class="toast-banner" role="status"></div>
+
+  <script>
+    // ==================== 全域字型與 Unicode 常數定義（徹底避免 Canvas 亂碼） ====================
+    const CANVAS_FONT_BOLD = 'bold 13px "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif';
+    const CANVAS_FONT_SMALL = 'bold 11px "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif';
+    const CANVAS_FONT_TITLE = 'bold 26px "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif';
+
+    const SYM_OMEGA = '\u03C9'; // ω
+    const SYM_PHI   = '\u03C6'; // φ
+    const SYM_DEG   = '\u00B0'; // °
+    const SYM_ARROW = '\u2192'; // →
+    const SYM_TIMES = '\u00D7'; // ×
+
+    function showToast(msg) {
+      const el = document.getElementById('toastBanner');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.remove('show'), 3200);
+    }
+
+    // 一鍵匯出離線 HTML 或純文字程式碼檔案（強制加入 UTF-8 BOM \uFEFF 防止 Windows 記事本亂碼）
+    function downloadSource(filename, mimeType) {
+      try {
+        const toast = document.getElementById('toastBanner');
+        toast.classList.remove('show');
+        const fullHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+        const blob = new Blob(['\uFEFF' + fullHtml], { type: mimeType + ';charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`\u2705 已成功匯出含 UTF-8 BOM 保護的檔案：${filename}`);
+      } catch (err) {
+        showToast('\u26A0\uFE0F 匯出時發生瀏覽器限制，請嘗試使用瀏覽器另存新檔。');
+      }
+    }
+
+    // 高解析度 Retina 畫布自適應設定
+    function setupCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return null;
+      const dpr = window.devicePixelRatio || 1;
+      const targetW = Math.round(rect.width * dpr);
+      const targetH = Math.round(rect.height * dpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w: rect.width, h: rect.height };
+    }
+
+    // 繪製帶有清晰箭頭的向量線段
+    function drawVectorArrow(ctx, x1, y1, x2, y2, color, width = 3, headSize = 10) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len = Math.hypot(dx, dy);
+      if (len < 3) return;
+      const ang = Math.atan2(dy, dx);
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2 - Math.cos(ang) * headSize * 0.65, y2 - Math.sin(ang) * headSize * 0.65);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headSize * Math.cos(ang - Math.PI / 6), y2 - headSize * Math.sin(ang - Math.PI / 6));
+      ctx.lineTo(x2 - headSize * Math.cos(ang + Math.PI / 6), y2 - headSize * Math.sin(ang + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 繪製帶有白色底框的高對比文字標籤（使用明確中文字體堆疊）
+    function drawLabelPill(ctx, text, x, y, textColor = '#0f172a', borderColor = '#cbd5e1') {
+      ctx.save();
+      ctx.font = CANVAS_FONT_SMALL;
+      const metrics = ctx.measureText(text);
+      const padX = 7;
+      const boxW = metrics.width + padX * 2;
+      const boxH = 20;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = textColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y + 0.5);
+      ctx.restore();
+    }
+
+    // 分頁切換控制
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ==================== 分頁 1：雙座標系對照實驗 ====================
+    const t1 = {
+      hemi: 1,           // 1 = 北半球 (逆時針), -1 = 南半球 (順時針)
+      launchDir: 'north',// 'north' | 'south' | 'east' | 'west'
+      speed: 115,
+      paused: false,
+      diskAngle: 0,
+      omegaBase: 0.58,
+      parcel: null,
+      inertialTrail: [],
+      rotatingTrail: []
+    };
+
+    document.getElementById('t1SpeedSlider').addEventListener('input', e => {
+      t1.speed = parseFloat(e.target.value);
+      document.getElementById('t1SpeedLabel').textContent = `${t1.speed} 單位/秒`;
+    });
+
+    function setT1Hemi(h) {
+      t1.hemi = h;
+      document.getElementById('t1BtnNH').classList.toggle('selected', h === 1);
+      document.getElementById('t1BtnSH').classList.toggle('selected', h === -1);
+      document.getElementById('t1HemiBadge').textContent = h === 1 ? '北半球' : '南半球';
+      document.getElementById('t1DeflectReadout').textContent =
+        h === 1 ? '面向前進方向之「右側」' : '面向前進方向之「左側」';
+      launchT1();
+    }
+
+    function setT1LaunchDir(dir) {
+      t1.launchDir = dir;
+      ['t1DirNorth', 't1DirSouth', 't1DirEast', 't1DirWest'].forEach(id => {
+        document.getElementById(id).classList.remove('selected');
+      });
+      const map = {
+        north: ['t1DirNorth', `低緯${SYM_ARROW}高緯：切線速度較快而向東超前`],
+        south: ['t1DirSouth', `高緯${SYM_ARROW}低緯：切線速度較慢而向西落後`],
+        east:  ['t1DirEast',  '向東速度疊加自轉：離心趨勢增強偏向低緯'],
+        west:  ['t1DirWest',  '向西速度抵消自轉：離心趨勢減弱偏向高緯']
+      };
+      document.getElementById(map[dir][0]).classList.add('selected');
+      document.getElementById('t1TangentialNote').textContent = map[dir][1];
+      launchT1();
+    }
+
+    function toggleT1Pause() {
+      t1.paused = !t1.paused;
+    }
+
+    function resetT1() {
+      t1.diskAngle = 0;
+      t1.parcel = null;
+      t1.inertialTrail = [];
+      t1.rotatingTrail = [];
+    }
+
+    function launchT1() {
+      t1.paused = false;
+      t1.diskAngle = 0;
+      t1.inertialTrail = [];
+      t1.rotatingTrail = [];
+
+      const omega = t1.hemi * t1.omegaBase;
+      // 統一在北半球或南半球以「向極點＝向北（NH）／向南（SH）」對應正確地理方位
+      // 為讓「向北、向南、向東、向西」在南北半球皆符合真實地理方位：
+      // 北半球 (hemi = +1)：圓心為北極，向外為南、向內為北、逆時針為東
+      // 南半球 (hemi = -1)：圓心為南極，向外為北、向內為南、順時針為東
+      let x0 = 0, y0 = 0, vx = 0, vy = 0;
+      const moveTowardsPole =
+        (t1.hemi === 1 && t1.launchDir === 'north') ||
+        (t1.hemi === -1 && t1.launchDir === 'south');
+      const moveTowardsEquator =
+        (t1.hemi === 1 && t1.launchDir === 'south') ||
+        (t1.hemi === -1 && t1.launchDir === 'north');
+
+      if (moveTowardsPole) {
+        const r0 = 136;
+        x0 = 0;
+        y0 = -r0;
+        vx = omega * r0;
+        vy = t1.speed;
+      } else if (moveTowardsEquator) {
+        const r0 = 78;
+        x0 = 0;
+        y0 = -r0;
+        vx = omega * r0;
+        vy = -t1.speed;
+      } else if (t1.launchDir === 'east') {
+        const r0 = 112;
+        x0 = 0;
+        y0 = -r0;
+        const eastSign = t1.hemi;
+        vx = omega * r0 + eastSign * (t1.speed * 0.72);
+        vy = 0;
+      } else if (t1.launchDir === 'west') {
+        const r0 = 112;
+        x0 = 0;
+        y0 = -r0;
+        const eastSign = t1.hemi;
+        vx = omega * r0 - eastSign * (t1.speed * 0.72);
+        vy = 0;
+      }
+
+      t1.parcel = { x: x0, y: y0, vx, vy, active: true };
+      t1.inertialTrail.push({ x: x0, y: y0 });
+      t1.rotatingTrail.push({ x: x0, y: y0 });
+    }
+
+    function updateT1(dt) {
+      if (t1.paused) return;
+      const slow = document.getElementById('t1SlowMo').checked ? 0.3 : 1.0;
+      const stepDt = dt * slow;
+      const omega = t1.hemi * t1.omegaBase;
+
+      t1.diskAngle += omega * stepDt;
+
+      const p = t1.parcel;
+      if (p && p.active) {
+        p.x += p.vx * stepDt;
+        p.y += p.vy * stepDt;
+
+        const c = Math.cos(-t1.diskAngle);
+        const s = Math.sin(-t1.diskAngle);
+        const rx = p.x * c - p.y * s;
+        const ry = p.x * s + p.y * c;
+
+        t1.inertialTrail.push({ x: p.x, y: p.y });
+        t1.rotatingTrail.push({ x: rx, y: ry });
+
+        if (Math.hypot(p.x, p.y) > 164) {
+          p.active = false;
+        }
+      }
+    }
+
+    function drawEarthDisk(ctx, cx, cy, R, angle, hemi, isInertial) {
+      ctx.save();
+      const grad = ctx.createRadialGradient(cx, cy, R * 0.05, cx, cy, R);
+      grad.addColorStop(0, '#f8fafc');
+      grad.addColorStop(0.65, '#e0f2fe');
+      grad.addColorStop(1, '#bae6fd');
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#0284c7';
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-angle);
+
+      const lats = [
+        { frac: 0.5, label: `60${SYM_DEG}` },
+        { frac: 0.85, label: `30${SYM_DEG}` }
+      ];
+      lats.forEach(item => {
+        ctx.beginPath();
+        ctx.arc(0, 0, R * item.frac, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(2, 132, 199, 0.35)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#0369a1';
+        ctx.font = CANVAS_FONT_SMALL;
+        ctx.textAlign = 'left';
+        ctx.fillText(item.label, 4, -R * item.frac + 12);
+      });
+
+      for (let i = 0; i < 12; i++) {
+        const theta = (i * Math.PI) / 6;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(R * Math.cos(theta), -R * Math.sin(theta));
+        const isPrime = i === 9;
+        ctx.strokeStyle = isPrime ? 'rgba(30, 58, 138, 0.55)' : 'rgba(100, 116, 139, 0.22)';
+        ctx.lineWidth = isPrime ? 2.2 : 1;
+        ctx.stroke();
+      }
+
+      if (isInertial && document.getElementById('t1ShowTangent').checked) {
+        const eastSign = hemi;
+        const tanPoints = [
+          { rFrac: 0.5, len: 24 },
+          { rFrac: 0.85, len: 42 },
+          { rFrac: 1.0, len: 56 }
+        ];
+        tanPoints.forEach(tp => {
+          const py = R * tp.rFrac;
+          drawVectorArrow(ctx, 0, py, eastSign * tp.len, py, '#0891b2', 2.5, 8);
+        });
+        drawLabelPill(
+          ctx,
+          `v = ${SYM_OMEGA}R cos${SYM_PHI} (赤道最快)`,
+          eastSign * 64,
+          R + 13,
+          '#0369a1',
+          '#7dd3fc'
+        );
+      }
+
+      ctx.beginPath();
+      ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e3a8a';
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.font = CANVAS_FONT_SMALL;
+      ctx.textAlign = 'center';
+      ctx.fillText(hemi === 1 ? '北極點' : '南極點', 0, -10);
+
+      ctx.restore();
+
+      ctx.fillStyle = '#0369a1';
+      ctx.font = CANVAS_FONT_SMALL;
+      ctx.textAlign = 'center';
+      if (isInertial) {
+        ctx.fillText(
+          hemi === 1
+            ? `\u21BB 地球由西向東「逆時針」自轉`
+            : `\u21BA 地球由西向東「順時針」自轉`,
+          cx,
+          cy - R - 14
+        );
+      } else {
+        ctx.fillText('觀察者隨地表一起旋轉（經緯線看似靜止）', cx, cy - R - 14);
+      }
+      ctx.restore();
+    }
+
+    function renderT1() {
+      const c1 = setupCanvas(document.getElementById('t1InertialCanvas'));
+      const c2 = setupCanvas(document.getElementById('t1RotatingCanvas'));
+      if (!c1 || !c2) return;
+
+      c1.ctx.clearRect(0, 0, c1.w, c1.h);
+      c2.ctx.clearRect(0, 0, c2.w, c2.h);
+
+      const R = Math.min(c1.w, c1.h) * 0.39;
+      const scale = R / 160;
+      const cx1 = c1.w / 2, cy1 = c1.h / 2 + 8;
+      const cx2 = c2.w / 2, cy2 = c2.h / 2 + 8;
+
+      drawEarthDisk(c1.ctx, cx1, cy1, R, t1.diskAngle, t1.hemi, true);
+      drawEarthDisk(c2.ctx, cx2, cy2, R, 0, t1.hemi, false);
+
+      // 左圖：太空慣性直線軌跡（虛線＋實線）
+      if (t1.inertialTrail.length > 0) {
+        const ctx = c1.ctx;
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        t1.inertialTrail.forEach((pt, idx) => {
+          const sx = cx1 + pt.x * scale;
+          const sy = cy1 - pt.y * scale;
+          if (idx === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        });
+        ctx.strokeStyle = '#d97706';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const last = t1.inertialTrail[t1.inertialTrail.length - 1];
+        const bx = cx1 + last.x * scale;
+        const by = cy1 - last.y * scale;
+
+        if (t1.parcel) {
+          drawVectorArrow(ctx, bx, by, bx + t1.parcel.vx * 0.34, by - t1.parcel.vy * 0.34, '#059669', 2.8, 9);
+        }
+
+        ctx.beginPath();
+        ctx.arc(bx, by, 7.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#f59e0b';
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 右圖：地面旋轉彎曲軌跡
+      if (t1.rotatingTrail.length > 0) {
+        const ctx = c2.ctx;
+        ctx.save();
+        ctx.beginPath();
+        t1.rotatingTrail.forEach((pt, idx) => {
+          const sx = cx2 + pt.x * scale;
+          const sy = cy2 - pt.y * scale;
+          if (idx === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        });
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 3.2;
+        ctx.stroke();
+
+        const len = t1.rotatingTrail.length;
+        const last = t1.rotatingTrail[len - 1];
+        const bx = cx2 + last.x * scale;
+        const by = cy2 - last.y * scale;
+
+        if (len >= 2) {
+          const prev = t1.rotatingTrail[len - 2];
+          const dvx = last.x - prev.x;
+          const dvy = last.y - prev.y;
+          const mag = Math.hypot(dvx, dvy);
+          if (mag > 0.001) {
+            const ux = dvx / mag;
+            const uy = dvy / mag;
+            drawVectorArrow(ctx, bx, by, bx + ux * 44, by - uy * 44, '#059669', 3, 9);
+
+            const cfx = t1.hemi * uy * 36;
+            const cfy = t1.hemi * ux * 36;
+            drawVectorArrow(ctx, bx, by, bx + cfx, by + cfy, '#2563eb', 3, 9);
+            drawLabelPill(ctx, '科氏力 Fc', bx + cfx * 1.4, by + cfy * 1.4, '#1d4ed8', '#93c5fd');
+          }
+        }
+
+        ctx.beginPath();
+        ctx.arc(bx, by, 7.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#f59e0b';
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // ==================== 分頁 2：特徵探究與四大特徵示範 ====================
+    const t2 = {
+      hemi: 1,
+      latAbs: 23.5,
+      speed: 22,
+      azimuth: 0,
+      paused: false,
+      parcel: null,
+      trail: [],
+      ghostTrail: []
+    };
+
+    document.getElementById('t2LatSlider').addEventListener('input', e => {
+      setT2Lat(parseFloat(e.target.value), false);
+    });
+
+    document.getElementById('t2SpeedSlider').addEventListener('input', e => {
+      setT2Speed(parseFloat(e.target.value), false);
+    });
+
+    function setT2Hemi(h) {
+      t2.hemi = h;
+      document.getElementById('t2BtnNH').classList.toggle('selected', h === 1);
+      document.getElementById('t2BtnSH').classList.toggle('selected', h === -1);
+      document.getElementById('t2SideHemi').textContent = h === 1 ? '北半球' : '南半球';
+      updateT2Readout();
+    }
+
+    function setT2Lat(val, syncSlider = true) {
+      t2.latAbs = val;
+      if (syncSlider) document.getElementById('t2LatSlider').value = val;
+      updateT2Readout();
+    }
+
+    function setT2Speed(val, syncSlider = true) {
+      t2.speed = val;
+      if (syncSlider) document.getElementById('t2SpeedSlider').value = val;
+      document.getElementById('t2SpeedText').textContent = `${val} m/s`;
+      updateT2Readout();
+    }
+
+    function updateT2Readout() {
+      const hemiLetter = t2.latAbs === 0 ? '' : (t2.hemi === 1 ? 'N' : 'S');
+      const hemiTitle = t2.latAbs === 0 ? '赤道' : (t2.hemi === 1 ? '北半球｜北緯' : '南半球｜南緯');
+      document.getElementById('t2LatText').textContent = `${t2.latAbs.toFixed(1)}\u00B0 ${hemiLetter}`;
+
+      let note = '';
+      if (t2.latAbs === 0) note = '（科氏力為零）';
+      else if (t2.latAbs === 23.5 && t2.hemi === 1) note = '（台灣）';
+      else if (t2.latAbs === 90) note = '（極點最大值）';
+      document.getElementById('t2BadgeStatus').textContent =
+        t2.latAbs === 0 ? `赤道 0.0\u00B0（科氏力為零）` : `${hemiTitle} ${t2.latAbs.toFixed(1)}\u00B0${note}`;
+
+      const sinVal = Math.sin((t2.latAbs * Math.PI) / 180);
+      const omegaReal = 7.292e-5; // rad/s
+      const acReal = 2 * omegaReal * t2.speed * sinVal; // m/s^2
+      const acMilli = acReal * 1000; // x 10^-3 m/s^2
+
+      document.getElementById('t2ParamV').textContent = `${t2.speed} m/s`;
+      document.getElementById('t2ParamPhi').textContent = `${t2.latAbs.toFixed(1)}\u00B0 ${hemiLetter}`;
+      document.getElementById('t2ParamSin').textContent = sinVal.toFixed(3);
+      document.getElementById('t2AcValue').innerHTML =
+        `${acMilli.toFixed(2)} &times; 10<sup>&minus;3</sup> m/s<sup>2</sup>`;
+
+      const pct = Math.round(sinVal * (t2.speed / 50) * 100);
+      document.getElementById('t2StrengthLabel').textContent = `${pct}%`;
+      document.getElementById('t2StrengthBar').style.width = `${pct}%`;
+    }
+
+    function launchT2(customPos = null) {
+      if (document.getElementById('t2KeepGhost').checked && t2.trail.length > 5) {
+        t2.ghostTrail = [...t2.trail];
+      } else if (!document.getElementById('t2KeepGhost').checked) {
+        t2.ghostTrail = [];
+      }
+
+      t2.paused = false;
+      t2.trail = [];
+
+      const mathRad = ((90 - t2.azimuth) * Math.PI) / 180;
+      let sx = 0, sy = 0;
+      if (customPos) {
+        sx = customPos.x;
+        sy = customPos.y;
+      } else {
+        sx = -135 * Math.cos(mathRad);
+        sy = -135 * Math.sin(mathRad);
+      }
+
+      const vVisual = t2.speed * 3.8;
+      t2.parcel = {
+        x: sx,
+        y: sy,
+        vx: vVisual * Math.cos(mathRad),
+        vy: vVisual * Math.sin(mathRad),
+        active: true
+      };
+      t2.trail.push({ x: sx, y: sy });
+      updateT2Readout();
+    }
+
+    function toggleT2Pause() {
+      t2.paused = !t2.paused;
+    }
+
+    function clearT2Trails() {
+      t2.parcel = null;
+      t2.trail = [];
+      t2.ghostTrail = [];
+    }
+
+    document.getElementById('t2MainCanvas').addEventListener('click', e => {
+      const rect = e.target.getBoundingClientRect();
+      const sx = (e.clientX - rect.left) - rect.width / 2;
+      const sy = rect.height / 2 - (e.clientY - rect.top);
+      launchT2({ x: sx, y: sy });
+    });
+
+    // 四大特徵一鍵套用示範參數
+    let demoToggle1 = false;
+    function demoFeature1() {
+      demoToggle1 = !demoToggle1;
+      t2.azimuth = 0;
+      setT2Lat(45);
+      setT2Speed(24);
+      setT2Hemi(demoToggle1 ? -1 : 1);
+      launchT2({ x: 0, y: -140 });
+      showToast(
+        demoToggle1
+          ? `示範參數已套用：南半球 45${SYM_DEG}S 向北吹（向左偏轉）`
+          : `示範參數已套用：北半球 45${SYM_DEG}N 向北吹（向右偏轉）`
+      );
+    }
+
+    let demoToggle2 = false;
+    function demoFeature2() {
+      demoToggle2 = !demoToggle2;
+      t2.azimuth = 0;
+      setT2Hemi(1);
+      setT2Speed(24);
+      setT2Lat(demoToggle2 ? 0 : 60);
+      launchT2({ x: -30, y: -145 });
+      showToast(
+        demoToggle2
+          ? `示範參數已套用：赤道 0${SYM_DEG}（sin 0${SYM_DEG} = 0，科氏力為零走直線）`
+          : `示範參數已套用：高緯 60${SYM_DEG}N（sin 60${SYM_DEG} = 0.866，明顯偏轉）`
+      );
+    }
+
+    let demoToggle3 = false;
+    function demoFeature3() {
+      demoToggle3 = !demoToggle3;
+      t2.azimuth = 0;
+      setT2Hemi(1);
+      setT2Lat(45);
+      setT2Speed(demoToggle3 ? 44 : 12);
+      launchT2({ x: -40, y: -145 });
+      showToast(
+        demoToggle3
+          ? '示範參數已套用：高風速 44 m/s（科氏加速度大幅增加）'
+          : '示範參數已套用：低風速 12 m/s（科氏加速度較小）'
+      );
+    }
+
+    function demoFeature4() {
+      t2.azimuth = 0;
+      setT2Hemi(1);
+      setT2Lat(80);
+      setT2Speed(26);
+      launchT2({ x: -75, y: 0 });
+      showToast('示範參數已套用：觀察氣塊作等速率圓周偏轉，綠色速度箭頭長度始終不變！');
+    }
+
+    function updateT2(dt) {
+      if (t2.paused || !t2.parcel || !t2.parcel.active) return;
+
+      const sinLat = Math.sin((t2.latAbs * Math.PI) / 180);
+      const f = t2.hemi * 1.45 * sinLat;
+      const p = t2.parcel;
+
+      // RK4 四階龍格庫塔積分，確保純科氏力下速率嚴格守恆
+      const accel = (vx, vy) => ({ ax: f * vy, ay: -f * vx });
+      const k1 = accel(p.vx, p.vy);
+      const k2 = accel(p.vx + 0.5 * dt * k1.ax, p.vy + 0.5 * dt * k1.ay);
+      const k3 = accel(p.vx + 0.5 * dt * k2.ax, p.vy + 0.5 * dt * k2.ay);
+      const k4 = accel(p.vx + dt * k3.ax, p.vy + dt * k3.ay);
+
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx += (dt / 6) * (k1.ax + 2 * k2.ax + 2 * k3.ax + k4.ax);
+      p.vy += (dt / 6) * (k1.ay + 2 * k2.ay + 2 * k3.ay + k4.ay);
+
+      t2.trail.push({ x: p.x, y: p.y });
+      if (t2.trail.length > 900) t2.trail.shift();
+
+      if (Math.abs(p.x) > 580 || Math.abs(p.y) > 360) {
+        p.active = false;
+      }
+    }
+
+    function renderT2() {
+      const res = setupCanvas(document.getElementById('t2MainCanvas'));
+      if (!res) return;
+      const { ctx, w, h } = res;
+      ctx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      const grid = 48;
+      for (let x = cx % grid; x < w; x += grid) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = cy % grid; y < h; y += grid) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(cx, 28); ctx.lineTo(cx, h - 28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(45, cy); ctx.lineTo(w - 45, cy); ctx.stroke();
+
+      drawLabelPill(ctx, '北 (N)', cx, 18, '#1e3a8a', '#93c5fd');
+      drawLabelPill(ctx, '南 (S)', cx, h - 18, '#1e3a8a', '#93c5fd');
+      drawLabelPill(ctx, '西 (W)', 36, cy, '#475569', '#cbd5e1');
+      drawLabelPill(ctx, '東 (E)', w - 36, cy, '#475569', '#cbd5e1');
+
+      // 左上角地球剖面小圖（顯示當地旋轉分量 ω sinφ）
+      ctx.save();
+      ctx.fillStyle = 'rgba(248, 250, 252, 0.94)';
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(14, 14, 146, 152, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      const gx = 87, gy = 82, gr = 44;
+      ctx.beginPath();
+      ctx.arc(gx, gy, gr, 0, Math.PI * 2);
+      ctx.fillStyle = '#e0f2fe';
+      ctx.fill();
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.beginPath(); ctx.moveTo(gx - gr, gy); ctx.lineTo(gx + gr, gy);
+      ctx.strokeStyle = '#64748b'; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(gx, gy - gr - 10); ctx.lineTo(gx, gy + gr + 10);
+      ctx.strokeStyle = '#1e3a8a'; ctx.stroke();
+
+      const latSignedRad = (t2.hemi * t2.latAbs * Math.PI) / 180;
+      const px = gx + gr * Math.cos(latSignedRad);
+      const py = gy - gr * Math.sin(latSignedRad);
+      ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(px, py);
+      ctx.strokeStyle = '#d97706'; ctx.lineWidth = 2; ctx.stroke();
+
+      ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#dc2626'; ctx.fill();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = CANVAS_FONT_SMALL;
+      ctx.textAlign = 'center';
+      ctx.fillText(`垂直分量 ${SYM_OMEGA} sin${SYM_PHI}`, gx, 152);
+      ctx.restore();
+
+      // 上一條對照虛線軌跡
+      if (t2.ghostTrail.length > 1) {
+        ctx.save();
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        t2.ghostTrail.forEach((pt, i) => {
+          if (i === 0) ctx.moveTo(cx + pt.x, cy - pt.y);
+          else ctx.lineTo(cx + pt.x, cy - pt.y);
+        });
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2.6;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 目前軌跡
+      if (t2.trail.length > 1) {
+        ctx.save();
+        ctx.beginPath();
+        t2.trail.forEach((pt, i) => {
+          if (i === 0) ctx.moveTo(cx + pt.x, cy - pt.y);
+          else ctx.lineTo(cx + pt.x, cy - pt.y);
+        });
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 3.2;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (t2.parcel) {
+        const p = t2.parcel;
+        const sx = cx + p.x;
+        const sy = cy - p.y;
+        const vMag = Math.hypot(p.vx, p.vy);
+
+        if (vMag > 0.1) {
+          const ux = p.vx / vMag;
+          const uy = p.vy / vMag;
+
+          const vLen = 28 + t2.speed * 1.05;
+          drawVectorArrow(ctx, sx, sy, sx + ux * vLen, sy - uy * vLen, '#059669', 3.2, 10);
+          drawLabelPill(ctx, `v=${t2.speed}m/s`, sx + ux * (vLen + 26), sy - uy * (vLen + 18), '#065f46', '#6ee7b7');
+
+          const sinLat = Math.sin((t2.latAbs * Math.PI) / 180);
+          const cfLen = sinLat * (t2.speed * 1.55);
+          if (cfLen > 2) {
+            const cfx = t2.hemi * uy * cfLen;
+            const cfy = t2.hemi * ux * cfLen;
+            drawVectorArrow(ctx, sx, sy, sx + cfx, sy + cfy, '#2563eb', 3.2, 10);
+            drawLabelPill(ctx, '科氏力 Fc', sx + cfx * 1.28, sy + cfy * 1.28, '#1e40af', '#93c5fd');
+          }
+        }
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, 7.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#f59e0b';
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    // ==================== 分頁 3：地科應用（高低氣壓與風向環流模擬） ====================
+    const t3 = {
+      hemi: 1,
+      pressure: 'L',
+      alt: 'surface',
+      paused: false,
+      parcels: []
+    };
+
+    function updateT3UI() {
+      const hName = t3.hemi === 1 ? '北半球' : '南半球';
+      const pName = t3.pressure === 'L' ? '低氣壓 (L)' : '高氣壓 (H)';
+      const aName = t3.alt === 'surface' ? '近地面大氣' : '高空大氣（地轉風）';
+      document.getElementById('t3HeaderBadge').textContent = `${hName}｜${pName}｜${aName}`;
+      document.getElementById('t3ModeTag').textContent =
+        t3.alt === 'surface' ? '三力平衡（斜穿等壓線）' : '二力平衡（平行等壓線）';
+
+      const isCCW = (t3.pressure === 'L') === (t3.hemi === 1);
+      const rotStr = isCCW ? '逆時針' : '順時針';
+
+      if (t3.alt === 'upper') {
+        document.getElementById('t3SpinReadout').textContent = `${rotStr}平行等壓線（地轉風）`;
+        document.getElementById('t3AngleReadout').textContent = `0${SYM_DEG}（完全平行等壓線）`;
+        document.getElementById('t3BalanceReadout').textContent = '氣壓梯度力 (PGF) ＝ 科氏力 (CF)';
+
+        document.getElementById('stage3Title').textContent = '高空二力平衡：平行等壓線的地轉風';
+        document.getElementById('stage3Desc').innerHTML =
+          '<strong>高空大氣</strong>無地表摩擦力阻礙，風速持續加快直到<strong>科氏力（CF，藍色）與氣壓梯度力（PGF，紅色）大小相等、方向相反</strong>達成二力平衡。此時合力為零，風向穩定<strong>平行等壓線</strong>吹送，稱為<strong>地轉風</strong>。';
+      } else {
+        const ioStr = t3.pressure === 'L' ? '向內旋入（輻合）' : '向外旋出（輻散）';
+        document.getElementById('t3SpinReadout').textContent = `${rotStr}${ioStr}`;
+        document.getElementById('t3AngleReadout').textContent = `斜穿等壓線（約 25${SYM_DEG} ~ 35${SYM_DEG}）`;
+        document.getElementById('t3BalanceReadout').textContent = 'PGF > CF（因地面摩擦力減速）';
+
+        document.getElementById('stage3Title').textContent = '近地面三力平衡：形成氣旋／反氣旋螺旋';
+        document.getElementById('stage3Desc').innerHTML =
+          '<strong>近地面大氣</strong>受地表<strong>摩擦力（<span class="math-inline"><i>F</i><sub>f</sub></span>，橘色）</strong>阻礙使風速減慢，導致科氏力變小（<span class="math-inline">PGF &gt; CF</span>），氣壓梯度力略佔優勢，使風向<strong>斜穿等壓線</strong>向低壓中心輻合旋入（或自高壓中心輻散旋出）。';
+      }
+    }
+
+    function setT3Hemi(h) {
+      t3.hemi = h;
+      document.getElementById('t3BtnNH').classList.toggle('selected', h === 1);
+      document.getElementById('t3BtnSH').classList.toggle('selected', h === -1);
+      updateT3UI();
+      spawnT3Parcels();
+    }
+
+    function setT3Pressure(p) {
+      t3.pressure = p;
+      document.getElementById('t3BtnLow').classList.toggle('selected', p === 'L');
+      document.getElementById('t3BtnHigh').classList.toggle('selected', p === 'H');
+      updateT3UI();
+      spawnT3Parcels();
+    }
+
+    function setT3Alt(a) {
+      t3.alt = a;
+      document.getElementById('t3BtnSurface').classList.toggle('selected', a === 'surface');
+      document.getElementById('t3BtnUpper').classList.toggle('selected', a === 'upper');
+      updateT3UI();
+      spawnT3Parcels();
+    }
+
+    function toggleT3Pause() {
+      t3.paused = !t3.paused;
+    }
+
+    function spawnT3Parcels() {
+      t3.paused = false;
+      t3.parcels = [];
+      const count = 8;
+      const rStart = t3.pressure === 'L' ? 182 : 62;
+      for (let i = 0; i < count; i++) {
+        const ang = (i * Math.PI * 2) / count;
+        t3.parcels.push({
+          x: rStart * Math.cos(ang),
+          y: rStart * Math.sin(ang),
+          vx: 0,
+          vy: 0,
+          trail: [],
+          focus: i === 0
+        });
+      }
+    }
+
+    function resetFocusParcel() {
+      t3.paused = false;
+      const rStart = t3.pressure === 'L' ? 182 : 62;
+      t3.parcels.forEach((p, idx) => {
+        if (idx === 0) {
+          p.x = rStart;
+          p.y = 0;
+          p.vx = 0;
+          p.vy = 0;
+          p.trail = [];
+          p.focus = true;
+        }
+      });
+    }
+
+    function updateT3(dt) {
+      if (t3.paused) return;
+
+      const f = t3.hemi * 1.15;
+      const pgfMag = 78;
+      const frictionK = t3.alt === 'surface' ? 0.54 : 0.0;
+
+      const subSteps = 4;
+      const subDt = dt / subSteps;
+
+      t3.parcels.forEach(p => {
+        for (let s = 0; s < subSteps; s++) {
+          const r = Math.hypot(p.x, p.y);
+          if (r < 25 || r > 224) {
+            const resetR = t3.pressure === 'L' ? 182 : 58;
+            const ang = Math.atan2(p.y, p.x);
+            p.x = resetR * Math.cos(ang);
+            p.y = resetR * Math.sin(ang);
+            p.vx = 0;
+            p.vy = 0;
+            p.trail = [];
+            break;
+          }
+
+          const rx = p.x / r;
+          const ry = p.y / r;
+          const pgfSign = t3.pressure === 'L' ? -1 : 1;
+
+          const axPgf = pgfSign * pgfMag * rx;
+          const ayPgf = pgfSign * pgfMag * ry;
+
+          const axCor = f * p.vy;
+          const ayCor = -f * p.vx;
+
+          const axFric = -frictionK * p.vx;
+          const ayFric = -frictionK * p.vy;
+
+          p.vx += (axPgf + axCor + axFric) * subDt;
+          p.vy += (ayPgf + ayCor + ayFric) * subDt;
+          p.x += p.vx * subDt;
+          p.y += p.vy * subDt;
+
+          p.forces = { axPgf, ayPgf, axCor, ayCor, axFric, ayFric };
+        }
+
+        p.trail.push({ x: p.x, y: p.y });
+        if (p.trail.length > 85) p.trail.shift();
+      });
+    }
+
+    function renderT3() {
+      const res = setupCanvas(document.getElementById('t3MainCanvas'));
+      if (!res) return;
+      const { ctx, w, h } = res;
+      ctx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+
+      const rings = [52, 96, 140, 184];
+      rings.forEach((r, idx) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        const hpa = t3.pressure === 'L' ? 996 + idx * 4 : 1024 - idx * 4;
+        drawLabelPill(ctx, `${hpa} hPa`, cx, cy - r, '#475569', '#cbd5e1');
+      });
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, 25, 0, Math.PI * 2);
+      ctx.fillStyle = t3.pressure === 'L' ? '#fee2e2' : '#dbeafe';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = t3.pressure === 'L' ? '#dc2626' : '#2563eb';
+      ctx.stroke();
+
+      ctx.fillStyle = t3.pressure === 'L' ? '#b91c1c' : '#1d4ed8';
+      ctx.font = CANVAS_FONT_TITLE;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(t3.pressure, cx, cy + 1);
+      ctx.restore();
+
+      const showStream = document.getElementById('t3ShowStreamlines').checked;
+      const showVec = document.getElementById('t3ShowVectors').checked;
+
+      t3.parcels.forEach(p => {
+        if (!p.focus && !showStream) return;
+
+        if (p.trail.length > 1) {
+          ctx.beginPath();
+          p.trail.forEach((pt, i) => {
+            if (i === 0) ctx.moveTo(cx + pt.x, cy - pt.y);
+            else ctx.lineTo(cx + pt.x, cy - pt.y);
+          });
+          ctx.strokeStyle = p.focus ? 'rgba(5, 150, 105, 0.88)' : 'rgba(5, 150, 105, 0.32)';
+          ctx.lineWidth = p.focus ? 3.2 : 2;
+          ctx.stroke();
+        }
+
+        const sx = cx + p.x;
+        const sy = cy - p.y;
+
+        const vScale = 0.52;
+        drawVectorArrow(ctx, sx, sy, sx + p.vx * vScale, sy - p.vy * vScale, '#059669', p.focus ? 3.2 : 2, 9);
+
+        if (p.focus && showVec && p.forces) {
+          const fScale = 0.62;
+          const f = p.forces;
+          drawVectorArrow(ctx, sx, sy, sx + f.axPgf * fScale, sy - f.ayPgf * fScale, '#dc2626', 3, 9);
+          drawVectorArrow(ctx, sx, sy, sx + f.axCor * fScale, sy - f.ayCor * fScale, '#2563eb', 3, 9);
+          if (t3.alt === 'surface') {
+            drawVectorArrow(ctx, sx, sy, sx + f.axFric * fScale, sy - f.ayFric * fScale, '#d97706', 2.8, 9);
+          }
+        }
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, p.focus ? 7 : 4.2, 0, Math.PI * 2);
+        ctx.fillStyle = p.focus ? '#f59e0b' : '#059669';
+        ctx.fill();
+        if (p.focus) {
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      });
+    }
+
+    // ==================== 主動畫迴圈 ====================
+    let lastTimestamp = performance.now();
+    function mainLoop(now) {
+      const dt = Math.min((now - lastTimestamp) / 1000, 0.05);
+      lastTimestamp = now;
+
+      updateT1(dt);
+      renderT1();
+
+      updateT2(dt);
+      renderT2();
+
+      updateT3(dt);
+      renderT3();
+
+      requestAnimationFrame(mainLoop);
+    }
+
+    // 初始化所有實驗室狀態並啟動渲染
+    launchT1();
+    setT2Lat(23.5);
+    launchT2();
+    updateT3UI();
+    spawnT3Parcels();
+    requestAnimationFrame(mainLoop);
+  </script>
+</body>
+</html>
